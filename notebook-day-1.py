@@ -71,7 +71,7 @@ def _():
     import numpy as np
     import numpy.linalg as la
 
-    return np, sci
+    return np, plt, sci
 
 
 @app.cell(hide_code=True)
@@ -158,7 +158,7 @@ def _(np):
         return fy    
     
 
-    return F_x, F_y
+    return
 
 
 @app.cell(hide_code=True)
@@ -179,7 +179,7 @@ def _(M, g):
 
         return xddot, yddot
 
-    return (Center_mass,)
+    return
 
 
 @app.cell(hide_code=True)
@@ -246,16 +246,21 @@ def _(mo):
 
 
 @app.cell
-def _(Center_mass, F_x, F_y, J, l, np, xddot, yddot):
+def _(J, M, g, l, np):
     def F(t, s, f, phi):
         x, vx, y, vy, theta, omega = s
-
     
-        Center_mass(F_x(f,phi,theta), F_y(f,phi,theta))
-
+        # Compute forces
+        fx = -f * np.sin(theta + phi)
+        fy = f * np.cos(theta + phi)
+    
+        # Linear accelerations
+        xddot = fx / M
+        yddot = fy / M - g
+    
         # Rotational acceleration
         theta_ddot = -l * f * np.sin(phi) / J
-
+    
         return np.array([
             vx,            # x_dot
             xddot,         # vx_dot
@@ -336,7 +341,7 @@ def _(F, sci):
 
         return result.sol
 
-    return
+    return (redstart_solve,)
 
 
 @app.cell(hide_code=True)
@@ -353,6 +358,42 @@ def _(mo):
     return
 
 
+@app.cell
+def _(l, np, plt, redstart_solve):
+    def free_fall_example():
+        t_span = [0.0, 5.0]
+        y0 = [0.0, 0.0, 10.0, 0.0, 0.0, 0.0]  # [x, vx, y, vy, theta, omega]
+    
+        def f_phi(t, y):
+            return np.array([0.0, 0.0])  # [f, phi]
+    
+        sol = redstart_solve(t_span, y0, f_phi)
+        t = np.linspace(t_span[0], t_span[1], 1000)
+        y_t = sol(t)[2]  # y position
+    
+        # Find when y = l
+        from scipy.optimize import fsolve
+        t_cross = fsolve(lambda t: sol(t)[2] - l, 2.0)[0]
+    
+        print(f"Theoretical: y(t) = y0 + vy0*t - 0.5*g*t^2")
+        print(f"Solving l = 10 - 0.5*1*t^2 => t = sqrt(2*(10-1)) = {np.sqrt(2*(10-1)):.3f} s")
+        print(f"Numerical crossing time: {t_cross:.3f} s")
+    
+        plt.figure(figsize=(10, 6))
+        plt.plot(t, y_t, label=r"$y(t)$ (height in meters)", linewidth=2)
+        plt.plot(t, l * np.ones_like(t), color="grey", ls="--", linewidth=2, label=r"$y=\ell$ (1 m)")
+        plt.axhline(y=0, color='brown', ls='-', linewidth=1, label="Ground")
+        plt.title("Free Fall Trajectory", fontsize=14)
+        plt.xlabel("time $t$ (s)", fontsize=12)
+        plt.ylabel("height $y$ (m)", fontsize=12)
+        plt.grid(True, alpha=0.3)
+        plt.legend()
+        return plt.gcf()
+
+    free_fall_example()
+    return
+
+
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
@@ -364,6 +405,93 @@ def _(mo):
 
     Simulate the corresponding scenario, display graphically the results and check that your solution works as expected.
     """)
+    return
+
+
+@app.cell
+def _(M, g, l, np, plt, redstart_solve):
+    def controlled_landing_example():
+        t_span = [0.0, 5.0]
+        y0 = [0.0, 0.0, 10.0, -2.0, 0.0, 0.0]  # [x, vx, y, vy, theta, omega]
+    
+        # Desired trajectory: y(t) = a*t^4 + b*t^3 + c*t^2 + d*t + e
+        # with constraints: y(0)=10, y(5)=1, y'(0)=-2, y'(5)=0, y''(5)=0
+        # Solving the system:
+        # e = 10
+        # d = -2
+        # 625a + 125b + 25c + 5d + e = 1
+        # 500a + 75b + 10c + d = 0
+        # 300a + 30b + 2c = 0
+    
+        # Solve the linear system
+        A = np.array([[625, 125, 25],
+                      [500, 75, 10],
+                      [300, 30, 2]])
+        b_vec = np.array([1 - 5*(-2) - 10, 0 - (-2), 0])
+        abc = np.linalg.solve(A, b_vec)
+        a, b, c = abc
+    
+        def desired_acceleration(t):
+            """Compute required acceleration for desired trajectory"""
+            # y_ddot = 12*a*t^2 + 6*b*t + 2*c
+            return 12*a*t**2 + 6*b*t + 2*c
+    
+        def f_phi(t, y):
+            # y_ddot = f/M - g => f = M*(y_ddot + g)
+            if t < 5.0:
+                f = M * (desired_acceleration(t) + g)
+                f = max(0, f)  # Force can't be negative
+            else:
+                f = M * g  # Hover after landing
+            return np.array([f, 0.0])
+    
+        sol = redstart_solve(t_span, y0, f_phi)
+        t = np.linspace(t_span[0], t_span[1], 1000)
+        states = sol(t)
+        y_t = states[2]
+        vy_t = states[3]
+    
+        fig, axes = plt.subplots(2, 2, figsize=(12, 8))
+    
+        axes[0,0].plot(t, y_t, linewidth=2)
+        axes[0,0].axhline(y=l/2, color='r', ls='--', label='Target height (1m)')
+        axes[0,0].set_ylabel('Height y (m)')
+        axes[0,0].set_title('Position')
+        axes[0,0].grid(True, alpha=0.3)
+        axes[0,0].legend()
+    
+        axes[0,1].plot(t, vy_t, linewidth=2, color='orange')
+        axes[0,1].axhline(y=0, color='r', ls='--', label='Target velocity (0)')
+        axes[0,1].set_ylabel('Velocity vy (m/s)')
+        axes[0,1].set_title('Velocity')
+        axes[0,1].grid(True, alpha=0.3)
+        axes[0,1].legend()
+    
+        # Compute actual acceleration and force
+        dt = t[1] - t[0]
+        accel = np.gradient(vy_t, dt)
+        force = M * (accel + g)
+    
+        axes[1,0].plot(t, force, linewidth=2, color='green')
+        axes[1,0].axhline(y=M*g, color='b', ls='--', label='Hover force (Mg)')
+        axes[1,0].set_ylabel('Force f (N)')
+        axes[1,0].set_xlabel('Time t (s)')
+        axes[1,0].set_title('Required Force')
+        axes[1,0].grid(True, alpha=0.3)
+        axes[1,0].legend()
+    
+        axes[1,1].plot(t, desired_acceleration(t), label='Desired', linewidth=2)
+        axes[1,1].plot(t, accel, '--', label='Actual', linewidth=2)
+        axes[1,1].set_ylabel('Acceleration (m/s²)')
+        axes[1,1].set_xlabel('Time t (s)')
+        axes[1,1].set_title('Acceleration Tracking')
+        axes[1,1].grid(True, alpha=0.3)
+        axes[1,1].legend()
+    
+        plt.tight_layout()
+        return plt.gcf()
+
+    controlled_landing_example()
     return
 
 
