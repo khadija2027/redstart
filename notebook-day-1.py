@@ -513,7 +513,7 @@ def _(mo):
 def _():
     from svg import svg, transform, animate_transform
 
-    return
+    return (svg,)
 
 
 @app.cell(hide_code=True)
@@ -570,6 +570,172 @@ def _(mo):
     return
 
 
+@app.cell
+def _(mo, svg):
+    def world(view_box, *objects):
+        """
+        Create an SVG world with sky, ground, and a landing pad.
+
+        Parameters
+        ----------
+        view_box : [x_min, x_max, y_min, y_max]
+            Cartesian coordinates (y-axis points upward).
+        *objects :
+            Optional SVG elements to overlay on the world.
+        """
+        x_min, x_max, y_min, y_max = view_box
+
+        # Dimensions of the SVG viewBox
+        width = x_max - x_min
+        height = y_max - y_min
+
+        # Background elements in Cartesian coordinates
+        # Sky: from y = 0 to y = y_max
+        sky = (
+            f'<rect x="{x_min}" y="0" '
+            f'width="{width}" height="{y_max}" '
+            f'fill="#87CEEB"/>'
+        )
+
+        # Ground: from y = y_min to y = 0
+        ground = (
+            f'<rect x="{x_min}" y="{y_min}" '
+            f'width="{width}" height="{0 - y_min}" '
+            f'fill="#8B4513"/>'
+        )
+
+        # Grass strip at y = 0
+        grass = (
+            f'<rect x="{x_min}" y="0" '
+            f'width="{width}" height="0.05" '
+            f'fill="#228B22"/>'
+        )
+
+        # Landing pad
+        landing_pad = """
+        <rect x="-1" y="-0.05" width="2" height="0.05"
+              fill="#00AA00"
+              stroke="#006600"
+              stroke-width="0.02"
+              rx="0.02"/>
+        """
+
+        # Target marker
+        target_marker = """
+        <circle cx="0" cy="-0.025" r="0.15"
+                fill="#FF0000"
+                opacity="0.8"/>
+        """
+
+        # Crosshair
+        crosshair_h = """
+        <line x1="-0.1" y1="-0.025"
+              x2="0.1"  y2="-0.025"
+              stroke="#FFFFFF"
+              stroke-width="0.02"/>
+        """
+
+        crosshair_v = """
+        <line x1="0" y1="-0.125"
+              x2="0" y2="0.075"
+              stroke="#FFFFFF"
+              stroke-width="0.02"/>
+        """
+
+        # Combine built-in elements
+        elements = [
+            sky,
+            ground,
+            grass,
+            landing_pad,
+            target_marker,
+            crosshair_h,
+            crosshair_v,
+        ]
+
+        # Add user-provided SVG objects
+        for obj in objects:
+            elements.append(str(obj))
+
+        # Invert Y-axis so Cartesian coordinates behave naturally:
+        # y increases upward and the sky appears at the top.
+        group = f"""
+        <g transform="translate(0,{y_min + y_max}) scale(1,-1)">
+            {''.join(elements)}
+        </g>
+        """
+
+        # Final SVG
+        svg_string = f"""
+        <svg viewBox="{x_min} {y_min} {width} {height}"
+             width="100%"
+             height="100%"
+             preserveAspectRatio="xMidYMid meet"
+             xmlns="http://www.w3.org/2000/svg">
+            {group}
+        </svg>
+        """
+
+        return svg_string
+
+
+    # ---------------------------------------------------------------------
+    # Example tests
+    # ---------------------------------------------------------------------
+    def test_world():
+        # Test 1: Empty world
+        world1 = world([-3, 3, -2, 4])
+
+        # Test 2: Black square above landing pad
+        world2 = world(
+            [-3, 3, -2, 4],
+            svg.rect(
+                x=-1,
+                y=0,
+                width=2,
+                height=2,
+                fill="black",
+                opacity=0.7,
+            ),
+        )
+
+        # Test 3: Red square upper-left and blue square upper-right
+        world3 = world(
+            [-3, 3, -2, 4],
+            svg.rect(
+                x=-3,
+                y=2,
+                width=2,
+                height=2,
+                fill="red",
+                opacity=0.8,
+            ),
+            svg.rect(
+                x=1,
+                y=2,
+                width=2,
+                height=2,
+                fill="blue",
+                opacity=0.8,
+            ),
+        )
+
+        # Display the three worlds side by side
+        return mo.hstack(
+            [
+                mo.Html(world1),
+                mo.Html(world2),
+                mo.Html(world3),
+            ],
+            justify="space-around",
+        )
+
+
+    # Run tests
+    test_world()
+    return (world,)
+
+
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
@@ -622,6 +788,104 @@ def _(mo):
     return
 
 
+@app.cell
+def _(M, g, l, mo, np, world):
+    def booster(x, y, theta, f, phi):
+        """
+        Create an SVG fragment representing a rocket booster and its flame.
+        """
+        l = 2
+        M = 1
+        g = 1
+        # ------------------------------------------------------------------
+        # Geometry parameters
+        # ------------------------------------------------------------------
+        body_width = l / 6
+        body_height = l
+
+        # Flame length (scaled so that f = M*g → l/2)
+        flame_length = (f / (M * g)) * (l / 2) if M * g != 0 else 0
+
+        flame_width = body_width * 0.6
+
+        # ------------------------------------------------------------------
+        # Booster body
+        # ------------------------------------------------------------------
+        body = f'''
+        <rect x="{-body_width/2}"
+              y="{-body_height/2}"
+              width="{body_width}"
+              height="{body_height}"
+              fill="#2C3E50"
+              rx="{body_width/6}"/>
+        '''
+
+        # Nose cone
+        nose = f'''
+        <polygon points="
+            {-body_width/2},{body_height/2}
+            {body_width/2},{body_height/2}
+            0,{body_height/2 + body_width/1.5}
+        "
+        fill="#34495E"/>
+        '''
+
+        # Flame
+        if f > 0:
+            flame = f'''
+            <g transform="translate(0,{-body_height/2}) rotate({-phi * 180 / np.pi})">
+                <polygon points="
+                    {-flame_width/2},0
+                    {flame_width/2},0
+                    0,{-flame_length}
+                "
+                fill="#FF6600"
+                opacity="0.85"/>
+            </g>
+            '''
+        else:
+            flame = ""
+
+        # ------------------------------------------------------------------
+        # Global transform
+        # ------------------------------------------------------------------
+        svg_fragment = f'''
+        <g transform="translate({x},{y}) rotate({theta * 180 / np.pi})">
+            {flame}
+            {body}
+            {nose}
+        </g>
+        '''
+
+        return svg_fragment
+
+    mo.hstack(
+        [
+            mo.Html(
+                world(
+                    [-3, 3, -2, 4],
+                    booster(0, l/2, 0, 0, 0),
+                )
+            ),
+            mo.Html(
+                world(
+                    [-3, 3, -2, 4],
+                    booster(0, l, 0, M * g, 0),
+                )
+            ),
+            mo.Html(
+                world(
+                    [-3, 3, -2, 4],
+                    booster(-l/2, l, np.pi / 4, 2 * M * g, np.pi / 2),
+                )
+            ),
+        ],
+        justify="space-around",
+    )
+    
+    return
+
+
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
@@ -666,6 +930,143 @@ def _(mo):
     ).center()
     ```
     """)
+    return
+
+
+@app.cell
+def _(np, plt):
+    def _():
+        from matplotlib.patches import Rectangle, Polygon
+        from matplotlib import animation
+        from IPython.display import HTML
+        import marimo as mo
+
+        def booster_anim(x, y, theta, f, phi, T, l=2.0):
+            """Creates an animated visualization of a rocket booster."""
+            f0 = 1
+            l=2
+            fig, ax = plt.subplots(figsize=(6, 6))
+            ax.set_xlim(-3, 3)
+            ax.set_ylim(-2, 4)
+            ax.set_aspect('equal')
+            ax.grid(True, linestyle=':', alpha=0.6, color='gray')
+            ax.set_facecolor('#f0f0f0')
+            ax.set_title("Booster Simulation", fontsize=14, fontweight='bold')
+        
+            # Draw launch pad
+            ax.axhline(y=-1.5, color='brown', linewidth=3, alpha=0.7)
+            ax.text(-2.8, -1.6, "Launch Pad", fontsize=10, alpha=0.7)
+        
+            # Booster body
+            body_width = l/2
+            body_height = l
+            body = Rectangle(
+                (-body_width/2, -body_height/2), 
+                body_width, body_height,
+                facecolor='steelblue', 
+                edgecolor='navy', 
+                linewidth=2.5,
+                alpha=0.9
+            )
+        
+            # Flame
+            flame = Polygon(
+                np.array([[0, 0], [0, 0], [0, 0]]),
+                facecolor='orange', 
+                edgecolor='darkred', 
+                linewidth=1.5,
+                alpha=0.9
+            )
+        
+            ax.add_patch(body)
+            ax.add_patch(flame)
+        
+            # Info text
+            info_text = ax.text(2.2, 3.6, '', fontsize=10, 
+                                bbox=dict(boxstyle="round", facecolor='white', alpha=0.8))
+        
+            n_frames = 80
+            times = np.linspace(0, T, n_frames)
+        
+            def update(frame):
+                t = times[frame]
+            
+                cx, cy = x(t), y(t)
+                ang = theta(t)
+                force = f(t)
+                flame_angle_offset = phi(t)
+            
+                # Flame length proportional to force
+                flame_len = (force / f0) * (l/2) if force <= 2*f0 else l
+                flame_len = max(0.1, min(flame_len, l))
+            
+                # Update info
+                info_text.set_text(f'Time: {t:.2f}s\nForce: {force:.1f} N\nFlame: {flame_len:.2f}m')
+            
+                # Flame direction
+                flame_dir = ang + flame_angle_offset + np.pi
+            
+                # Booster bottom center
+                base_body = np.array([0, -l/2])
+                cos_a, sin_a = np.cos(ang), np.sin(ang)
+                R = np.array([[cos_a, -sin_a], [sin_a, cos_a]])
+                base_world = R @ base_body + np.array([cx, cy])
+            
+                # Flame tip
+                tip_world = base_world + flame_len * np.array([np.cos(flame_dir), np.sin(flame_dir)])
+            
+                # Flame sides
+                perp = np.array([-np.sin(flame_dir), np.cos(flame_dir)])
+                half_width = body_width / 2.5
+                left_world = base_world + half_width * perp
+                right_world = base_world - half_width * perp
+            
+                flame.set_xy([left_world, tip_world, right_world])
+            
+                # Update booster position
+                from matplotlib.transforms import Affine2D
+                transform = Affine2D().rotate_around(0, 0, ang).translate(cx, cy)
+                body.set_transform(transform + ax.transData)
+            
+                return body, flame, info_text
+        
+            anim = animation.FuncAnimation(
+                fig, update, frames=n_frames,
+                interval=T*1000/n_frames, 
+                blit=True, 
+                repeat=True  # This gives you the Loop/Reflect functionality
+            )
+        
+            plt.close(fig)
+            return HTML(anim.to_jshtml())
+
+        # Test function
+        def booster_anim_0(l=2.0, M=1.0, g=1):
+            T = 5.0
+        
+            def x(t):
+                return -l/2 + l * (t / T)
+        
+            def y(t):
+                return l/2 + l/2 * (t / T)
+        
+            def theta(t):
+                return (t / T) * 2 * np.pi
+        
+            def f(t):
+                return M * g * (t / T)
+        
+            def phi(t):
+                return 2 * np.pi * (t / T)
+        
+            return booster_anim(x, y, theta, f, phi, T=T, l=l, M=M, g=g)
+
+        # Display the simulation
+        simulation = booster_anim_0(2,1,1)
+        return simulation
+
+
+    _()
     return
 
 
