@@ -1113,56 +1113,110 @@ def _(mo):
 @app.cell
 def _(J, M, booster_anim, g, l, mo, np, world):
     # ------------------------------------------------------------
-    # Simulate and animate several booster scenarios
+    # Realistic booster simulation with ground contact ("sol")
+    # State: z = [x, vx, y, vy, theta, omega]
+    #
     # Requires:
+    #   - numpy as np   (already imported in another cell)
     #   - scipy.integrate.solve_ivp
-    #   - booster_anim(x, y, theta, f, phi, T)
+    #   - booster_anim(...)
     #   - world(...)
     #   - mo
-    # Global constants:
-    #   - M, g, l, J
+    #
+    # Global constants expected:
+    #   M, g, l
+    #
+    # If J is not defined elsewhere, we set:
+    #   J = M * l**2 / 12
     # ------------------------------------------------------------
 
     from scipy.integrate import solve_ivp
 
-
-    def simulate_booster(z0, f_fun, phi_fun, T=5.0, n=200):
+    # ------------------------------------------------------------
+    # ODE simulation with ground contact
+    # ------------------------------------------------------------
+    def simulate_booster(z0, f_fun, phi_fun, T=5.0, n=400):
         """
-        Simulate the booster ODE.
+        Simulate booster dynamics with a simple ground model.
 
-        State:
-            z = [x, vx, y, vy, theta, omega]
+        Ground model:
+        - The bottom of the booster is at y - l.
+        - Ground is at y = l, so that the booster center rests at y = l.
+        - If center goes below y = l:
+            * vertical velocity is set to 0
+            * horizontal velocity is damped
+            * angular velocity is damped
+            * theta is slowly restored toward 0
         """
+
+        y_ground = l  # center height when booster stands on the ground
 
         def ode(t, z):
             x, vx, y, vy, theta, omega = z
 
-            f = f_fun(t)
+            # Controls
+            f = max(0.0, f_fun(t))
             phi = phi_fun(t)
 
-            # Translational dynamics
+            # Thrust in world coordinates
             ax = -(f / M) * np.sin(theta + phi)
             ay =  (f / M) * np.cos(theta + phi) - g
 
-            # Rotational dynamics
+            # Torque from gimballed engine
             alpha = (l * f * np.sin(phi)) / J
+
+            # ----------------------------------------------------
+            # Ground contact
+            # ----------------------------------------------------
+            if y <= y_ground and vy <= 0:
+                # Prevent penetration
+                y = y_ground
+
+                # Vertical support force from ground
+                ay = max(0.0, ay)
+
+                # Damping while on the ground
+                ax += -2.0 * vx
+                alpha += -8.0 * omega - 4.0 * theta
 
             return [vx, ax, vy, ay, omega, alpha]
 
-        t_eval = np.linspace(0, T, n)
-        sol = solve_ivp(ode, [0, T], z0, t_eval=t_eval)
+        # --------------------------------------------------------
+        # Integrate
+        # --------------------------------------------------------
+        t_eval = np.linspace(0.0, T, n)
+
+        sol = solve_ivp(
+            ode,
+            (0.0, T),
+            z0,
+            t_eval=t_eval,
+            rtol=1e-8,
+            atol=1e-8,
+        )
+
+        # --------------------------------------------------------
+        # Post-process to clamp ground penetration
+        # --------------------------------------------------------
+        y_ground = l
+        for k in range(sol.y.shape[1]):
+            if sol.y[2, k] < y_ground:
+                sol.y[2, k] = y_ground
+                if sol.y[3, k] < 0:
+                    sol.y[3, k] = 0.0
 
         return sol
 
 
+    # ------------------------------------------------------------
+    # Convert solution into time-dependent functions
+    # ------------------------------------------------------------
     def solution_to_functions(sol):
-        """
-        Convert solve_ivp solution into callable functions.
-        """
+        T = sol.t[-1]
 
         def interp_component(i):
             def func(t):
-                t_mod = t % sol.t[-1]
+                t_mod = t % T
                 return np.interp(t_mod, sol.t, sol.y[i])
             return func
 
@@ -1173,25 +1227,25 @@ def _(J, M, booster_anim, g, l, mo, np, world):
         return x, y, theta
 
 
+    # ------------------------------------------------------------
+    # Simulate and create animation
+    # ------------------------------------------------------------
     def make_animation(z0, f_fun, phi_fun, T=5.0):
-        """
-        Simulate then create SVG animation.
-        """
         sol = simulate_booster(z0, f_fun, phi_fun, T=T)
         x, y, theta = solution_to_functions(sol)
-
         return booster_anim(x, y, theta, f_fun, phi_fun, T=T)
 
 
     # ------------------------------------------------------------
     # Initial condition
     # (x, vx, y, vy, theta, omega)
+    # Start 10 m above the ground.
     # ------------------------------------------------------------
     z0 = [0.0, 0.0, 10.0, 0.0, 0.0, 0.0]
 
 
     # ------------------------------------------------------------
-    # Scenario 1: Free fall (f = 0, phi = 0)
+    # Scenario 1: Free fall
     # ------------------------------------------------------------
     def f1(t):
         return 0.0
@@ -1202,7 +1256,7 @@ def _(J, M, booster_anim, g, l, mo, np, world):
 
 
     # ------------------------------------------------------------
-    # Scenario 2: Hover (f = M*g, phi = 0)
+    # Scenario 2: Hover
     # ------------------------------------------------------------
     def f2(t):
         return M * g
@@ -1213,7 +1267,7 @@ def _(J, M, booster_anim, g, l, mo, np, world):
 
 
     # ------------------------------------------------------------
-    # Scenario 3: Tilted thrust (f = M*g, phi = pi/8)
+    # Scenario 3: Constant gimbal
     # ------------------------------------------------------------
     def f3(t):
         return M * g
@@ -1224,19 +1278,103 @@ def _(J, M, booster_anim, g, l, mo, np, world):
 
 
     # ------------------------------------------------------------
-    # Scenario 4: Controlled landing
+    # Scenario 4: Controlled landing (simple feedback)
     # ------------------------------------------------------------
     def f4(t):
-        # Slightly stronger than weight near the end
-        if t < 3.5:
-            return 0.8 * M * g
-        else:
-            return 1.2 * M * g
+        # This function will be ignored by the controller below,
+        # but booster_anim still needs it for flame length.
+        return M * g
 
 
     def phi4(t):
-        # Stabilizing oscillation
-        return 0.15 * np.sin(2 * np.pi * t / 5.0)
+        return 0.0
+
+
+    def make_controlled_landing(T=5.0):
+        """
+        PD controller on altitude and attitude.
+        """
+
+        y_ground = l
+
+        def ode(t, z):
+            x, vx, y, vy, theta, omega = z
+
+            # Desired altitude: stand on the ground
+            y_ref = y_ground
+
+            # Altitude PD control
+            ay_cmd = (
+                2.0 * (y_ref - y)
+                + 3.0 * (0.0 - vy)
+                + g
+            )
+
+            # Desired thrust
+            f = np.clip(M * ay_cmd, 0.0, 2.5 * M * g)
+
+            # Attitude PD control
+            phi = np.clip(
+                -2.0 * theta - 1.0 * omega,
+                -np.pi / 6,
+                np.pi / 6,
+            )
+
+            # Dynamics
+            ax = -(f / M) * np.sin(theta + phi)
+            ay =  (f / M) * np.cos(theta + phi) - g
+            alpha = (l * f * np.sin(phi)) / J
+
+            # Ground contact
+            if y <= y_ground and vy <= 0:
+                ay = max(0.0, ay)
+                ax += -3.0 * vx
+                alpha += -10.0 * omega - 6.0 * theta
+
+            return [vx, ax, vy, ay, omega, alpha]
+
+        t_eval = np.linspace(0.0, T, 400)
+
+        sol = solve_ivp(
+            ode,
+            (0.0, T),
+            z0,
+            t_eval=t_eval,
+            rtol=1e-8,
+            atol=1e-8,
+        )
+
+        # Clamp to ground
+        for k in range(sol.y.shape[1]):
+            if sol.y[2, k] < l:
+                sol.y[2, k] = l
+                if sol.y[3, k] < 0:
+                    sol.y[3, k] = 0.0
+
+        # Interpolated state
+        x, y, theta = solution_to_functions(sol)
+
+        # Interpolated controls for flame animation
+        def f_fun(t):
+            t_mod = t % T
+            y_t = np.interp(t_mod, sol.t, sol.y[2])
+            vy_t = np.interp(t_mod, sol.t, sol.y[3])
+
+            ay_cmd = 2.0 * (l - y_t) + 3.0 * (0.0 - vy_t) + g
+            return np.clip(M * ay_cmd, 0.0, 2.5 * M * g)
+
+        def phi_fun(t):
+            t_mod = t % T
+            theta_t = np.interp(t_mod, sol.t, sol.y[4])
+            omega_t = np.interp(t_mod, sol.t, sol.y[5])
+
+            return np.clip(
+                -2.0 * theta_t - 1.0 * omega_t,
+                -np.pi / 6,
+                np.pi / 6,
+            )
+
+        return booster_anim(x, y, theta, f_fun, phi_fun, T=T)
 
 
     # ------------------------------------------------------------
@@ -1245,7 +1383,7 @@ def _(J, M, booster_anim, g, l, mo, np, world):
     anim1 = make_animation(z0, f1, phi1, T=5.0)
     anim2 = make_animation(z0, f2, phi2, T=5.0)
     anim3 = make_animation(z0, f3, phi3, T=5.0)
-    anim4 = make_animation(z0, f4, phi4, T=5.0)
+    anim4 = make_controlled_landing(T=5.0)
 
 
     # ------------------------------------------------------------
