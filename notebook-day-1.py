@@ -71,7 +71,7 @@ def _():
     import numpy as np
     import numpy.linalg as la
 
-    return
+    return np, sci
 
 
 @app.cell(hide_code=True)
@@ -128,6 +128,15 @@ def _(mo):
     return
 
 
+@app.cell
+def _():
+    # Constants
+    g = 1.0      # gravitational acceleration (m/s^2)
+    M = 1.0      # mass of the booster (kg)
+    l = 1.0      # half-length of the booster (m), total length = 2*l = 2 m
+    return M, g, l
+
+
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
@@ -136,6 +145,20 @@ def _(mo):
     Compute the cartesian coordinates $f_x$ and $f_y$ of the force applied to the booster by the reactor, functions of $f$, $\theta$ and $\phi$.
     """)
     return
+
+
+@app.cell
+def _(np):
+    def F_x(f, theta, phi):
+        fx = -f * np.sin(theta + phi)
+        return fx
+
+    def F_y(f, theta, phi):
+        fy =  f * np.cos(theta + phi)
+        return fy    
+    
+
+    return F_x, F_y
 
 
 @app.cell(hide_code=True)
@@ -148,6 +171,17 @@ def _(mo):
     return
 
 
+@app.cell
+def _(M, g):
+    def Center_mass(fx, fy):
+        xddot = fx / M
+        yddot = fy / M - g
+
+        return xddot, yddot
+
+    return (Center_mass,)
+
+
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
@@ -158,6 +192,12 @@ def _(mo):
     return
 
 
+@app.cell
+def _(M, l):
+    J = (1/3) * M * l**2
+    return (J,)
+
+
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
@@ -165,6 +205,20 @@ def _(mo):
 
     Give the ordinary differential equation that governs the evolution of the tilt angle $\theta$.
     """)
+    return
+
+
+@app.cell
+def _(J, l, np):
+    def Tilt(f, theta, phi):
+        """
+        Returns theta_ddot.
+        """
+        # Torque about the center of mass:
+        # tau = -l * f * sin(phi)
+        theta_ddot = -l * f * np.sin(phi) / J
+        return theta_ddot
+
     return
 
 
@@ -189,6 +243,29 @@ def _(mo):
     $$
     """)
     return
+
+
+@app.cell
+def _(Center_mass, F_x, F_y, J, l, np, xddot, yddot):
+    def F(t, s, f, phi):
+        x, vx, y, vy, theta, omega = s
+
+    
+        Center_mass(F_x(f,phi,theta), F_y(f,phi,theta))
+
+        # Rotational acceleration
+        theta_ddot = -l * f * np.sin(phi) / J
+
+        return np.array([
+            vx,            # x_dot
+            xddot,         # vx_dot
+            vy,            # y_dot
+            yddot,         # vy_dot
+            omega,         # theta_dot
+            theta_ddot     # omega_dot
+        ])
+
+    return (F,)
 
 
 @app.cell(hide_code=True)
@@ -228,6 +305,37 @@ def _(mo):
     free_fall_example()
     ```
     """)
+    return
+
+
+@app.cell
+def _(F, sci):
+    def redstart_solve(t_span, y0, f_phi):
+        """
+        Parameters
+        ----------
+        t_span : [t0, tf]
+        y0 : initial state [x, vx, y, vy, theta, omega]
+        f_phi : function (t, y) -> [f, phi]
+
+        Returns
+        -------
+        sol : callable
+            sol(t) returns the state at time t.
+        """
+        def rhs(t, y):
+            f, phi = f_phi(t, y)
+            return F(t, y, f, phi)
+
+        result = sci.solve_ivp(
+            rhs,
+            t_span,
+            y0,
+            dense_output=True
+        )
+
+        return result.sol
+
     return
 
 
