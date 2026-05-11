@@ -1089,7 +1089,7 @@ def _(M, g, l, mo, np, world):
             booster_anim_0(),
         )
     ).center()
-    return
+    return (booster_anim,)
 
 
 @app.cell(hide_code=True)
@@ -1107,6 +1107,159 @@ def _(mo):
 
     4. The "controlled landing" scenario (see above).
     """)
+    return
+
+
+@app.cell
+def _(J, M, booster_anim, g, l, mo, np, world):
+    # ------------------------------------------------------------
+    # Simulate and animate several booster scenarios
+    # Requires:
+    #   - scipy.integrate.solve_ivp
+    #   - booster_anim(x, y, theta, f, phi, T)
+    #   - world(...)
+    #   - mo
+    # Global constants:
+    #   - M, g, l, J
+    # ------------------------------------------------------------
+
+    from scipy.integrate import solve_ivp
+
+
+    def simulate_booster(z0, f_fun, phi_fun, T=5.0, n=200):
+        """
+        Simulate the booster ODE.
+
+        State:
+            z = [x, vx, y, vy, theta, omega]
+        """
+
+        def ode(t, z):
+            x, vx, y, vy, theta, omega = z
+
+            f = f_fun(t)
+            phi = phi_fun(t)
+
+            # Translational dynamics
+            ax = -(f / M) * np.sin(theta + phi)
+            ay =  (f / M) * np.cos(theta + phi) - g
+
+            # Rotational dynamics
+            alpha = (l * f * np.sin(phi)) / J
+
+            return [vx, ax, vy, ay, omega, alpha]
+
+        t_eval = np.linspace(0, T, n)
+        sol = solve_ivp(ode, [0, T], z0, t_eval=t_eval)
+
+        return sol
+
+
+    def solution_to_functions(sol):
+        """
+        Convert solve_ivp solution into callable functions.
+        """
+
+        def interp_component(i):
+            def func(t):
+                t_mod = t % sol.t[-1]
+                return np.interp(t_mod, sol.t, sol.y[i])
+            return func
+
+        x = interp_component(0)
+        y = interp_component(2)
+        theta = interp_component(4)
+
+        return x, y, theta
+
+
+    def make_animation(z0, f_fun, phi_fun, T=5.0):
+        """
+        Simulate then create SVG animation.
+        """
+        sol = simulate_booster(z0, f_fun, phi_fun, T=T)
+        x, y, theta = solution_to_functions(sol)
+
+        return booster_anim(x, y, theta, f_fun, phi_fun, T=T)
+
+
+    # ------------------------------------------------------------
+    # Initial condition
+    # (x, vx, y, vy, theta, omega)
+    # ------------------------------------------------------------
+    z0 = [0.0, 0.0, 10.0, 0.0, 0.0, 0.0]
+
+
+    # ------------------------------------------------------------
+    # Scenario 1: Free fall (f = 0, phi = 0)
+    # ------------------------------------------------------------
+    def f1(t):
+        return 0.0
+
+
+    def phi1(t):
+        return 0.0
+
+
+    # ------------------------------------------------------------
+    # Scenario 2: Hover (f = M*g, phi = 0)
+    # ------------------------------------------------------------
+    def f2(t):
+        return M * g
+
+
+    def phi2(t):
+        return 0.0
+
+
+    # ------------------------------------------------------------
+    # Scenario 3: Tilted thrust (f = M*g, phi = pi/8)
+    # ------------------------------------------------------------
+    def f3(t):
+        return M * g
+
+
+    def phi3(t):
+        return np.pi / 8
+
+
+    # ------------------------------------------------------------
+    # Scenario 4: Controlled landing
+    # ------------------------------------------------------------
+    def f4(t):
+        # Slightly stronger than weight near the end
+        if t < 3.5:
+            return 0.8 * M * g
+        else:
+            return 1.2 * M * g
+
+
+    def phi4(t):
+        # Stabilizing oscillation
+        return 0.15 * np.sin(2 * np.pi * t / 5.0)
+
+
+    # ------------------------------------------------------------
+    # Build animations
+    # ------------------------------------------------------------
+    anim1 = make_animation(z0, f1, phi1, T=5.0)
+    anim2 = make_animation(z0, f2, phi2, T=5.0)
+    anim3 = make_animation(z0, f3, phi3, T=5.0)
+    anim4 = make_animation(z0, f4, phi4, T=5.0)
+
+
+    # ------------------------------------------------------------
+    # Display all scenarios
+    # ------------------------------------------------------------
+    mo.hstack(
+        [
+            mo.Html(world([-15, 15, 0, 15], anim1)),
+            mo.Html(world([-15, 15, 0, 15], anim2)),
+            mo.Html(world([-15, 15, 0, 15], anim3)),
+            mo.Html(world([-15, 15, 0, 15], anim4)),
+        ],
+        justify="space-around",
+    )
     return
 
 
