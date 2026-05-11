@@ -934,139 +934,161 @@ def _(mo):
 
 
 @app.cell
-def _(np, plt):
-    def _():
-        from matplotlib.patches import Rectangle, Polygon
-        from matplotlib import animation
-        from IPython.display import HTML
-        import marimo as mo
+def _(M, g, l, mo, np, world):
+    def booster_anim(x, y, theta, f, phi, T=5.0, frames=40):
 
-        def booster_anim(x, y, theta, f, phi, T, l=2.0):
-            """Creates an animated visualization of a rocket booster."""
-            f0 = 1
-            l=2
-            fig, ax = plt.subplots(figsize=(6, 6))
-            ax.set_xlim(-3, 3)
-            ax.set_ylim(-2, 4)
-            ax.set_aspect('equal')
-            ax.grid(True, linestyle=':', alpha=0.6, color='gray')
-            ax.set_facecolor('#f0f0f0')
-            ax.set_title("Booster Simulation", fontsize=14, fontweight='bold')
-        
-            # Draw launch pad
-            ax.axhline(y=-1.5, color='brown', linewidth=3, alpha=0.7)
-            ax.text(-2.8, -1.6, "Launch Pad", fontsize=10, alpha=0.7)
-        
-            # Booster body
-            body_width = l/2
-            body_height = l
-            body = Rectangle(
-                (-body_width/2, -body_height/2), 
-                body_width, body_height,
-                facecolor='steelblue', 
-                edgecolor='navy', 
-                linewidth=2.5,
-                alpha=0.9
-            )
-        
-            # Flame
-            flame = Polygon(
-                np.array([[0, 0], [0, 0], [0, 0]]),
-                facecolor='orange', 
-                edgecolor='darkred', 
-                linewidth=1.5,
-                alpha=0.9
-            )
-        
-            ax.add_patch(body)
-            ax.add_patch(flame)
-        
-            # Info text
-            info_text = ax.text(2.2, 3.6, '', fontsize=10, 
-                                bbox=dict(boxstyle="round", facecolor='white', alpha=0.8))
-        
-            n_frames = 80
-            times = np.linspace(0, T, n_frames)
-        
-            def update(frame):
-                t = times[frame]
-            
-                cx, cy = x(t), y(t)
-                ang = theta(t)
-                force = f(t)
-                flame_angle_offset = phi(t)
-            
-                # Flame length proportional to force
-                flame_len = (force / f0) * (l/2) if force <= 2*f0 else l
-                flame_len = max(0.1, min(flame_len, l))
-            
-                # Update info
-                info_text.set_text(f'Time: {t:.2f}s\nForce: {force:.1f} N\nFlame: {flame_len:.2f}m')
-            
-                # Flame direction
-                flame_dir = ang + flame_angle_offset + np.pi
-            
-                # Booster bottom center
-                base_body = np.array([0, -l/2])
-                cos_a, sin_a = np.cos(ang), np.sin(ang)
-                R = np.array([[cos_a, -sin_a], [sin_a, cos_a]])
-                base_world = R @ base_body + np.array([cx, cy])
-            
-                # Flame tip
-                tip_world = base_world + flame_len * np.array([np.cos(flame_dir), np.sin(flame_dir)])
-            
-                # Flame sides
-                perp = np.array([-np.sin(flame_dir), np.cos(flame_dir)])
-                half_width = body_width / 2.5
-                left_world = base_world + half_width * perp
-                right_world = base_world - half_width * perp
-            
-                flame.set_xy([left_world, tip_world, right_world])
-            
-                # Update booster position
-                from matplotlib.transforms import Affine2D
-                transform = Affine2D().rotate_around(0, 0, ang).translate(cx, cy)
-                body.set_transform(transform + ax.transData)
-            
-                return body, flame, info_text
-        
-            anim = animation.FuncAnimation(
-                fig, update, frames=n_frames,
-                interval=T*1000/n_frames, 
-                blit=True, 
-                repeat=True  # This gives you the Loop/Reflect functionality
-            )
-        
-            plt.close(fig)
-            return HTML(anim.to_jshtml())
+        times = np.linspace(0, T, frames)
 
-        # Test function
-        def booster_anim_0(l=2.0, M=1.0, g=1):
-            T = 5.0
-        
-            def x(t):
-                return -l/2 + l * (t / T)
-        
-            def y(t):
-                return l/2 + l/2 * (t / T)
-        
-            def theta(t):
-                return (t / T) * 2 * np.pi
-        
-            def f(t):
-                return M * g * (t / T)
-        
-            def phi(t):
-                return 2 * np.pi * (t / T)
-        
-            return booster_anim(x, y, theta, f, phi, T=T, l=l, M=M, g=g)
+        # ------------------------------------------------------------
+        # Build animation keyframes
+        # ------------------------------------------------------------
+        translate_vals = []
+        rotate_vals = []
+        flame_rotate_vals = []
+        flame_length_vals = []
 
-        # Display the simulation
-        simulation = booster_anim_0(2,1,1)
-        return simulation
+        for t in times:
+
+            xt = x(t)
+            yt = y(t)
+            th = theta(t)
+
+            ft = f(t)
+            ph = phi(t)
+
+            # Flame scaling rule
+            flame_length = (ft / (M * g)) * (l / 2)
+
+            translate_vals.append(f"{xt} {yt}")
+            rotate_vals.append(f"{-th * 180 / np.pi}")
+            flame_rotate_vals.append(f"{-ph * 180 / np.pi}")
+            flame_length_vals.append(str(flame_length))
+
+        translate_vals = ";".join(translate_vals)
+        rotate_vals = ";".join(rotate_vals)
+        flame_rotate_vals = ";".join(flame_rotate_vals)
+        flame_length_vals = ";".join(flame_length_vals)
+
+        # ------------------------------------------------------------
+        # BODY
+        # ------------------------------------------------------------
+        body = f"""
+        <g>
+
+            <rect
+                x="-0.125"
+                y="-{l}"
+                width="0.25"
+                height="{2*l}"
+                fill="gray"
+                stroke="black"
+                stroke-width="0.03"
+                rx="0.05"
+            />
+
+            <!-- TRANSLATION -->
+            <animateTransform
+                attributeName="transform"
+                type="translate"
+                values="{translate_vals}"
+                dur="{T}s"
+                repeatCount="indefinite"
+            />
+
+            <!-- ROTATION -->
+            <animateTransform
+                attributeName="transform"
+                type="rotate"
+                values="{rotate_vals}"
+                dur="{T}s"
+                repeatCount="indefinite"
+                additive="sum"
+            />
+
+        </g>
+        """
+
+        # ------------------------------------------------------------
+        # FLAME
+        # ------------------------------------------------------------
+        flame = f"""
+        <g>
+
+            <polygon
+                points="-0.08 -{l} 0.08 -{l} 0 -{l}"
+                fill="orange"
+                stroke="red"
+                stroke-width="0.02"
+            />
+
+            <!-- TRANSLATION -->
+            <animateTransform
+                attributeName="transform"
+                type="translate"
+                values="{translate_vals}"
+                dur="{T}s"
+                repeatCount="indefinite"
+            />
+
+            <!-- ROTATION booster -->
+            <animateTransform
+                attributeName="transform"
+                type="rotate"
+                values="{rotate_vals}"
+                dur="{T}s"
+                repeatCount="indefinite"
+                additive="sum"
+            />
+
+            <!-- ROTATION flame orientation -->
+            <animateTransform
+                attributeName="transform"
+                type="rotate"
+                values="{flame_rotate_vals}"
+                dur="{T}s"
+                repeatCount="indefinite"
+                additive="sum"
+            />
+
+        </g>
+        """
+
+        return body + flame
+
+    # ------------------------------------------------------------
+    # TEST
+    # ------------------------------------------------------------
+    def booster_anim_0():
+
+        T = 5.0
+        M = 1
+        g = 9.81
+        l = 2
+
+        def x(t):
+            return -l / 2 + l * (t / T)
+
+        def y(t):
+            return l / 2 + l / 2 * (t / T)
+
+        def theta(t):
+            return (t / T) * 2 * np.pi
+
+        def f(t):
+            return M * g * (t / T)
+
+        def phi(t):
+            return 2 * np.pi * (t / T)
+
+        return booster_anim(x, y, theta, f, phi, T=T)
 
 
-    _()
+    mo.Html(
+        world(
+            [-3, 3, -2, 4],
+            booster_anim_0(),
+        )
+    ).center()
     return
 
 
