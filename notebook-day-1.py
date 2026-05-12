@@ -71,7 +71,7 @@ def _():
     import numpy as np
     import numpy.linalg as la
 
-    return np, plt, sci
+    return
 
 
 @app.cell(hide_code=True)
@@ -128,15 +128,6 @@ def _(mo):
     return
 
 
-@app.cell
-def _():
-    # Constants
-    g = 1.0      # gravitational acceleration (m/s^2)
-    M = 1.0      # mass of the booster (kg)
-    l = 1.0      # half-length of the booster (m), total length = 2*l = 2 m
-    return M, g, l
-
-
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
@@ -144,20 +135,6 @@ def _(mo):
 
     Compute the cartesian coordinates $f_x$ and $f_y$ of the force applied to the booster by the reactor, functions of $f$, $\theta$ and $\phi$.
     """)
-    return
-
-
-@app.cell
-def _(np):
-    def F_x(f, theta, phi):
-        fx = -f * np.sin(theta + phi)
-        return fx
-
-    def F_y(f, theta, phi):
-        fy =  f * np.cos(theta + phi)
-        return fy    
-    
-
     return
 
 
@@ -171,17 +148,6 @@ def _(mo):
     return
 
 
-@app.cell
-def _(M, g):
-    def Center_mass(fx, fy):
-        xddot = fx / M
-        yddot = fy / M - g
-
-        return xddot, yddot
-
-    return
-
-
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
@@ -192,12 +158,6 @@ def _(mo):
     return
 
 
-@app.cell
-def _(M, l):
-    J = (1/3) * M * l**2
-    return (J,)
-
-
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
@@ -205,20 +165,6 @@ def _(mo):
 
     Give the ordinary differential equation that governs the evolution of the tilt angle $\theta$.
     """)
-    return
-
-
-@app.cell
-def _(J, l, np):
-    def Tilt(f, theta, phi):
-        """
-        Returns theta_ddot.
-        """
-        # Torque about the center of mass:
-        # tau = -l * f * sin(phi)
-        theta_ddot = -l * f * np.sin(phi) / J
-        return theta_ddot
-
     return
 
 
@@ -243,34 +189,6 @@ def _(mo):
     $$
     """)
     return
-
-
-@app.cell
-def _(J, M, g, l, np):
-    def F(t, s, f, phi):
-        x, vx, y, vy, theta, omega = s
-    
-        # Compute forces
-        fx = -f * np.sin(theta + phi)
-        fy = f * np.cos(theta + phi)
-    
-        # Linear accelerations
-        xddot = fx / M
-        yddot = fy / M - g
-    
-        # Rotational acceleration
-        theta_ddot = -l * f * np.sin(phi) / J
-    
-        return np.array([
-            vx,            # x_dot
-            xddot,         # vx_dot
-            vy,            # y_dot
-            yddot,         # vy_dot
-            omega,         # theta_dot
-            theta_ddot     # omega_dot
-        ])
-
-    return (F,)
 
 
 @app.cell(hide_code=True)
@@ -313,37 +231,6 @@ def _(mo):
     return
 
 
-@app.cell
-def _(F, sci):
-    def redstart_solve(t_span, y0, f_phi):
-        """
-        Parameters
-        ----------
-        t_span : [t0, tf]
-        y0 : initial state [x, vx, y, vy, theta, omega]
-        f_phi : function (t, y) -> [f, phi]
-
-        Returns
-        -------
-        sol : callable
-            sol(t) returns the state at time t.
-        """
-        def rhs(t, y):
-            f, phi = f_phi(t, y)
-            return F(t, y, f, phi)
-
-        result = sci.solve_ivp(
-            rhs,
-            t_span,
-            y0,
-            dense_output=True
-        )
-
-        return result.sol
-
-    return (redstart_solve,)
-
-
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
@@ -358,42 +245,6 @@ def _(mo):
     return
 
 
-@app.cell
-def _(l, np, plt, redstart_solve):
-    def free_fall_example():
-        t_span = [0.0, 5.0]
-        y0 = [0.0, 0.0, 10.0, 0.0, 0.0, 0.0]  # [x, vx, y, vy, theta, omega]
-    
-        def f_phi(t, y):
-            return np.array([0.0, 0.0])  # [f, phi]
-    
-        sol = redstart_solve(t_span, y0, f_phi)
-        t = np.linspace(t_span[0], t_span[1], 1000)
-        y_t = sol(t)[2]  # y position
-    
-        # Find when y = l
-        from scipy.optimize import fsolve
-        t_cross = fsolve(lambda t: sol(t)[2] - l, 2.0)[0]
-    
-        print(f"Theoretical: y(t) = y0 + vy0*t - 0.5*g*t^2")
-        print(f"Solving l = 10 - 0.5*1*t^2 => t = sqrt(2*(10-1)) = {np.sqrt(2*(10-1)):.3f} s")
-        print(f"Numerical crossing time: {t_cross:.3f} s")
-    
-        plt.figure(figsize=(10, 6))
-        plt.plot(t, y_t, label=r"$y(t)$ (height in meters)", linewidth=2)
-        plt.plot(t, l * np.ones_like(t), color="grey", ls="--", linewidth=2, label=r"$y=\ell$ (1 m)")
-        plt.axhline(y=0, color='brown', ls='-', linewidth=1, label="Ground")
-        plt.title("Free Fall Trajectory", fontsize=14)
-        plt.xlabel("time $t$ (s)", fontsize=12)
-        plt.ylabel("height $y$ (m)", fontsize=12)
-        plt.grid(True, alpha=0.3)
-        plt.legend()
-        return plt.gcf()
-
-    free_fall_example()
-    return
-
-
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
@@ -405,93 +256,6 @@ def _(mo):
 
     Simulate the corresponding scenario, display graphically the results and check that your solution works as expected.
     """)
-    return
-
-
-@app.cell
-def _(M, g, l, np, plt, redstart_solve):
-    def controlled_landing_example():
-        t_span = [0.0, 5.0]
-        y0 = [0.0, 0.0, 10.0, -2.0, 0.0, 0.0]  # [x, vx, y, vy, theta, omega]
-    
-        # Desired trajectory: y(t) = a*t^4 + b*t^3 + c*t^2 + d*t + e
-        # with constraints: y(0)=10, y(5)=1, y'(0)=-2, y'(5)=0, y''(5)=0
-        # Solving the system:
-        # e = 10
-        # d = -2
-        # 625a + 125b + 25c + 5d + e = 1
-        # 500a + 75b + 10c + d = 0
-        # 300a + 30b + 2c = 0
-    
-        # Solve the linear system
-        A = np.array([[625, 125, 25],
-                      [500, 75, 10],
-                      [300, 30, 2]])
-        b_vec = np.array([1 - 5*(-2) - 10, 0 - (-2), 0])
-        abc = np.linalg.solve(A, b_vec)
-        a, b, c = abc
-    
-        def desired_acceleration(t):
-            """Compute required acceleration for desired trajectory"""
-            # y_ddot = 12*a*t^2 + 6*b*t + 2*c
-            return 12*a*t**2 + 6*b*t + 2*c
-    
-        def f_phi(t, y):
-            # y_ddot = f/M - g => f = M*(y_ddot + g)
-            if t < 5.0:
-                f = M * (desired_acceleration(t) + g)
-                f = max(0, f)  # Force can't be negative
-            else:
-                f = M * g  # Hover after landing
-            return np.array([f, 0.0])
-    
-        sol = redstart_solve(t_span, y0, f_phi)
-        t = np.linspace(t_span[0], t_span[1], 1000)
-        states = sol(t)
-        y_t = states[2]
-        vy_t = states[3]
-    
-        fig, axes = plt.subplots(2, 2, figsize=(12, 8))
-    
-        axes[0,0].plot(t, y_t, linewidth=2)
-        axes[0,0].axhline(y=l/2, color='r', ls='--', label='Target height (1m)')
-        axes[0,0].set_ylabel('Height y (m)')
-        axes[0,0].set_title('Position')
-        axes[0,0].grid(True, alpha=0.3)
-        axes[0,0].legend()
-    
-        axes[0,1].plot(t, vy_t, linewidth=2, color='orange')
-        axes[0,1].axhline(y=0, color='r', ls='--', label='Target velocity (0)')
-        axes[0,1].set_ylabel('Velocity vy (m/s)')
-        axes[0,1].set_title('Velocity')
-        axes[0,1].grid(True, alpha=0.3)
-        axes[0,1].legend()
-    
-        # Compute actual acceleration and force
-        dt = t[1] - t[0]
-        accel = np.gradient(vy_t, dt)
-        force = M * (accel + g)
-    
-        axes[1,0].plot(t, force, linewidth=2, color='green')
-        axes[1,0].axhline(y=M*g, color='b', ls='--', label='Hover force (Mg)')
-        axes[1,0].set_ylabel('Force f (N)')
-        axes[1,0].set_xlabel('Time t (s)')
-        axes[1,0].set_title('Required Force')
-        axes[1,0].grid(True, alpha=0.3)
-        axes[1,0].legend()
-    
-        axes[1,1].plot(t, desired_acceleration(t), label='Desired', linewidth=2)
-        axes[1,1].plot(t, accel, '--', label='Actual', linewidth=2)
-        axes[1,1].set_ylabel('Acceleration (m/s²)')
-        axes[1,1].set_xlabel('Time t (s)')
-        axes[1,1].set_title('Acceleration Tracking')
-        axes[1,1].grid(True, alpha=0.3)
-        axes[1,1].legend()
-    
-        plt.tight_layout()
-        return plt.gcf()
-
-    controlled_landing_example()
     return
 
 
@@ -513,7 +277,7 @@ def _(mo):
 def _():
     from svg import svg, transform, animate_transform
 
-    return (svg,)
+    return
 
 
 @app.cell(hide_code=True)
@@ -570,172 +334,6 @@ def _(mo):
     return
 
 
-@app.cell
-def _(mo, svg):
-    def world(view_box, *objects):
-        """
-        Create an SVG world with sky, ground, and a landing pad.
-
-        Parameters
-        ----------
-        view_box : [x_min, x_max, y_min, y_max]
-            Cartesian coordinates (y-axis points upward).
-        *objects :
-            Optional SVG elements to overlay on the world.
-        """
-        x_min, x_max, y_min, y_max = view_box
-
-        # Dimensions of the SVG viewBox
-        width = x_max - x_min
-        height = y_max - y_min
-
-        # Background elements in Cartesian coordinates
-        # Sky: from y = 0 to y = y_max
-        sky = (
-            f'<rect x="{x_min}" y="0" '
-            f'width="{width}" height="{y_max}" '
-            f'fill="#87CEEB"/>'
-        )
-
-        # Ground: from y = y_min to y = 0
-        ground = (
-            f'<rect x="{x_min}" y="{y_min}" '
-            f'width="{width}" height="{0 - y_min}" '
-            f'fill="#8B4513"/>'
-        )
-
-        # Grass strip at y = 0
-        grass = (
-            f'<rect x="{x_min}" y="0" '
-            f'width="{width}" height="0.05" '
-            f'fill="#228B22"/>'
-        )
-
-        # Landing pad
-        landing_pad = """
-        <rect x="-1" y="-0.05" width="2" height="0.05"
-              fill="#00AA00"
-              stroke="#006600"
-              stroke-width="0.02"
-              rx="0.02"/>
-        """
-
-        # Target marker
-        target_marker = """
-        <circle cx="0" cy="-0.025" r="0.15"
-                fill="#FF0000"
-                opacity="0.8"/>
-        """
-
-        # Crosshair
-        crosshair_h = """
-        <line x1="-0.1" y1="-0.025"
-              x2="0.1"  y2="-0.025"
-              stroke="#FFFFFF"
-              stroke-width="0.02"/>
-        """
-
-        crosshair_v = """
-        <line x1="0" y1="-0.125"
-              x2="0" y2="0.075"
-              stroke="#FFFFFF"
-              stroke-width="0.02"/>
-        """
-
-        # Combine built-in elements
-        elements = [
-            sky,
-            ground,
-            grass,
-            landing_pad,
-            target_marker,
-            crosshair_h,
-            crosshair_v,
-        ]
-
-        # Add user-provided SVG objects
-        for obj in objects:
-            elements.append(str(obj))
-
-        # Invert Y-axis so Cartesian coordinates behave naturally:
-        # y increases upward and the sky appears at the top.
-        group = f"""
-        <g transform="translate(0,{y_min + y_max}) scale(1,-1)">
-            {''.join(elements)}
-        </g>
-        """
-
-        # Final SVG
-        svg_string = f"""
-        <svg viewBox="{x_min} {y_min} {width} {height}"
-             width="100%"
-             height="100%"
-             preserveAspectRatio="xMidYMid meet"
-             xmlns="http://www.w3.org/2000/svg">
-            {group}
-        </svg>
-        """
-
-        return svg_string
-
-
-    # ---------------------------------------------------------------------
-    # Example tests
-    # ---------------------------------------------------------------------
-    def test_world():
-        # Test 1: Empty world
-        world1 = world([-3, 3, -2, 4])
-
-        # Test 2: Black square above landing pad
-        world2 = world(
-            [-3, 3, -2, 4],
-            svg.rect(
-                x=-1,
-                y=0,
-                width=2,
-                height=2,
-                fill="black",
-                opacity=0.7,
-            ),
-        )
-
-        # Test 3: Red square upper-left and blue square upper-right
-        world3 = world(
-            [-3, 3, -2, 4],
-            svg.rect(
-                x=-3,
-                y=2,
-                width=2,
-                height=2,
-                fill="red",
-                opacity=0.8,
-            ),
-            svg.rect(
-                x=1,
-                y=2,
-                width=2,
-                height=2,
-                fill="blue",
-                opacity=0.8,
-            ),
-        )
-
-        # Display the three worlds side by side
-        return mo.hstack(
-            [
-                mo.Html(world1),
-                mo.Html(world2),
-                mo.Html(world3),
-            ],
-            justify="space-around",
-        )
-
-
-    # Run tests
-    test_world()
-    return (world,)
-
-
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
@@ -788,104 +386,6 @@ def _(mo):
     return
 
 
-@app.cell
-def _(M, g, l, mo, np, world):
-    def booster(x, y, theta, f, phi):
-        """
-        Create an SVG fragment representing a rocket booster and its flame.
-        """
-        l = 2
-        M = 1
-        g = 1
-        # ------------------------------------------------------------------
-        # Geometry parameters
-        # ------------------------------------------------------------------
-        body_width = l / 6
-        body_height = l
-
-        # Flame length (scaled so that f = M*g → l/2)
-        flame_length = (f / (M * g)) * (l / 2) if M * g != 0 else 0
-
-        flame_width = body_width * 0.6
-
-        # ------------------------------------------------------------------
-        # Booster body
-        # ------------------------------------------------------------------
-        body = f'''
-        <rect x="{-body_width/2}"
-              y="{-body_height/2}"
-              width="{body_width}"
-              height="{body_height}"
-              fill="#2C3E50"
-              rx="{body_width/6}"/>
-        '''
-
-        # Nose cone
-        nose = f'''
-        <polygon points="
-            {-body_width/2},{body_height/2}
-            {body_width/2},{body_height/2}
-            0,{body_height/2 + body_width/1.5}
-        "
-        fill="#34495E"/>
-        '''
-
-        # Flame
-        if f > 0:
-            flame = f'''
-            <g transform="translate(0,{-body_height/2}) rotate({-phi * 180 / np.pi})">
-                <polygon points="
-                    {-flame_width/2},0
-                    {flame_width/2},0
-                    0,{-flame_length}
-                "
-                fill="#FF6600"
-                opacity="0.85"/>
-            </g>
-            '''
-        else:
-            flame = ""
-
-        # ------------------------------------------------------------------
-        # Global transform
-        # ------------------------------------------------------------------
-        svg_fragment = f'''
-        <g transform="translate({x},{y}) rotate({theta * 180 / np.pi})">
-            {flame}
-            {body}
-            {nose}
-        </g>
-        '''
-
-        return svg_fragment
-
-    mo.hstack(
-        [
-            mo.Html(
-                world(
-                    [-3, 3, -2, 4],
-                    booster(0, l/2, 0, 0, 0),
-                )
-            ),
-            mo.Html(
-                world(
-                    [-3, 3, -2, 4],
-                    booster(0, l, 0, M * g, 0),
-                )
-            ),
-            mo.Html(
-                world(
-                    [-3, 3, -2, 4],
-                    booster(-l/2, l, np.pi / 4, 2 * M * g, np.pi / 2),
-                )
-            ),
-        ],
-        justify="space-around",
-    )
-    
-    return
-
-
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
@@ -933,165 +433,6 @@ def _(mo):
     return
 
 
-@app.cell
-def _(M, g, l, mo, np, world):
-    def booster_anim(x, y, theta, f, phi, T=5.0, frames=40):
-
-        times = np.linspace(0, T, frames)
-
-        # ------------------------------------------------------------
-        # Build animation keyframes
-        # ------------------------------------------------------------
-        translate_vals = []
-        rotate_vals = []
-        flame_rotate_vals = []
-        flame_length_vals = []
-
-        for t in times:
-
-            xt = x(t)
-            yt = y(t)
-            th = theta(t)
-
-            ft = f(t)
-            ph = phi(t)
-
-            # Flame scaling rule
-            flame_length = (ft / (M * g)) * (l / 2)
-
-            translate_vals.append(f"{xt} {yt}")
-            rotate_vals.append(f"{-th * 180 / np.pi}")
-            flame_rotate_vals.append(f"{-ph * 180 / np.pi}")
-            flame_length_vals.append(str(flame_length))
-
-        translate_vals = ";".join(translate_vals)
-        rotate_vals = ";".join(rotate_vals)
-        flame_rotate_vals = ";".join(flame_rotate_vals)
-        flame_length_vals = ";".join(flame_length_vals)
-
-        # ------------------------------------------------------------
-        # BODY
-        # ------------------------------------------------------------
-        body = f"""
-        <g>
-
-            <rect
-                x="-0.125"
-                y="-{l}"
-                width="0.25"
-                height="{2*l}"
-                fill="gray"
-                stroke="black"
-                stroke-width="0.03"
-                rx="0.05"
-            />
-
-            <!-- TRANSLATION -->
-            <animateTransform
-                attributeName="transform"
-                type="translate"
-                values="{translate_vals}"
-                dur="{T}s"
-                repeatCount="indefinite"
-            />
-
-            <!-- ROTATION -->
-            <animateTransform
-                attributeName="transform"
-                type="rotate"
-                values="{rotate_vals}"
-                dur="{T}s"
-                repeatCount="indefinite"
-                additive="sum"
-            />
-
-        </g>
-        """
-
-        # ------------------------------------------------------------
-        # FLAME
-        # ------------------------------------------------------------
-        flame = f"""
-        <g>
-
-            <polygon
-                points="-0.08 -{l} 0.08 -{l} 0 -{l}"
-                fill="orange"
-                stroke="red"
-                stroke-width="0.02"
-            />
-
-            <!-- TRANSLATION -->
-            <animateTransform
-                attributeName="transform"
-                type="translate"
-                values="{translate_vals}"
-                dur="{T}s"
-                repeatCount="indefinite"
-            />
-
-            <!-- ROTATION booster -->
-            <animateTransform
-                attributeName="transform"
-                type="rotate"
-                values="{rotate_vals}"
-                dur="{T}s"
-                repeatCount="indefinite"
-                additive="sum"
-            />
-
-            <!-- ROTATION flame orientation -->
-            <animateTransform
-                attributeName="transform"
-                type="rotate"
-                values="{flame_rotate_vals}"
-                dur="{T}s"
-                repeatCount="indefinite"
-                additive="sum"
-            />
-
-        </g>
-        """
-
-        return body + flame
-
-    # ------------------------------------------------------------
-    # TEST
-    # ------------------------------------------------------------
-    def booster_anim_0():
-
-        T = 5.0
-        M = 1
-        g = 9.81
-        l = 2
-
-        def x(t):
-            return -l / 2 + l * (t / T)
-
-        def y(t):
-            return l / 2 + l / 2 * (t / T)
-
-        def theta(t):
-            return (t / T) * 2 * np.pi
-
-        def f(t):
-            return M * g * (t / T)
-
-        def phi(t):
-            return 2 * np.pi * (t / T)
-
-        return booster_anim(x, y, theta, f, phi, T=T)
-
-
-    mo.Html(
-        world(
-            [-3, 3, -2, 4],
-            booster_anim_0(),
-        )
-    ).center()
-    return (booster_anim,)
-
-
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
@@ -1107,164 +448,6 @@ def _(mo):
 
     4. The "controlled landing" scenario (see above).
     """)
-    return
-
-
-@app.cell
-def _(M, booster_anim, g, mo, np, redstart_solve, world):
-    def animated_simulation_results():
-        T = 5.0
-        t_span = [0.0, T]
-    
-        # ------------------------------------------------------------
-        # 1) Free fall: f = 0, phi = 0
-        # ------------------------------------------------------------
-        y0_1 = [0.0, 0.0, 10.0, 0.0, 0.0, 0.0]
-        def f_phi_1(t, y):
-            return np.array([0.0, 0.0])
-    
-        sol1 = redstart_solve(t_span, y0_1, f_phi_1)
-    
-        x1 = lambda t: sol1(t)[0]
-        y1 = lambda t: sol1(t)[2]
-        theta1 = lambda t: sol1(t)[4]
-        f1 = lambda t: 0.0
-        phi1 = lambda t: 0.0
-    
-        anim1 = booster_anim(x1, y1, theta1, f1, phi1, T=T)
-    
-        # ------------------------------------------------------------
-        # 2) Constant thrust upward: f = Mg, phi = 0
-        # La fusée doit rester à la même hauteur (y ≈ 10)
-        # ------------------------------------------------------------
-        y0_2 = [0.0, 0.0, 10.0, 0.0, 0.0, 0.0]
-        def f_phi_2(t, y):
-            return np.array([M * g, 0.0])
-    
-        sol2 = redstart_solve(t_span, y0_2, f_phi_2)
-    
-        x2 = lambda t: sol2(t)[0]
-        y2 = lambda t: sol2(t)[2]
-        theta2 = lambda t: sol2(t)[4]
-        f2 = lambda t: M * g
-        phi2 = lambda t: 0.0
-    
-        anim2 = booster_anim(x2, y2, theta2, f2, phi2, T=T)
-    
-        # ------------------------------------------------------------
-        # 3) Tilted thrust: f = Mg, phi = pi/8
-        # ------------------------------------------------------------
-        y0_3 = [0.0, 0.0, 10.0, 0.0, 0.0, 0.0]
-        def f_phi_3(t, y):
-            return np.array([M * g, np.pi / 8])
-    
-        sol3 = redstart_solve(t_span, y0_3, f_phi_3)
-    
-        x3 = lambda t: sol3(t)[0]
-        y3 = lambda t: sol3(t)[2]
-        theta3 = lambda t: sol3(t)[4]
-        f3 = lambda t: M * g
-        phi3 = lambda t: np.pi / 8
-    
-        anim3 = booster_anim(x3, y3, theta3, f3, phi3, T=T)
-    
-        # ------------------------------------------------------------
-        # 4) Controlled landing with proper trajectory
-        # y(0)=10, y(5)=1, vy(0)=0, vy(5)=0
-        # ------------------------------------------------------------
-        # Polynomial: y(t) = a*t^3 + b*t^2 + c*t + d
-        # Conditions:
-        # y(0) = d = 10
-        # y(5) = 125a + 25b + 5c + 10 = 1
-        # vy(0) = c = 0
-        # vy(5) = 75a + 10b + c = 0
-    
-        d = 10  # y(0)
-        c = 0   # vy(0)
-    
-        # Solve for a and b:
-        # 125a + 25b + 5*0 + 10 = 1  => 125a + 25b = -9
-        # 75a + 10b + 0 = 0          => 75a + 10b = 0
-        A = np.array([[125, 25], [75, 10]])
-        B = np.array([-9, 0])
-        a, b = np.linalg.solve(A, B)
-    
-        def desired_position(t):
-            return a*t**3 + b*t**2 + c*t + d
-    
-        def desired_velocity(t):
-            return 3*a*t**2 + 2*b*t + c
-    
-        def desired_acceleration(t):
-            return 6*a*t + 2*b
-    
-        def f_phi_4(t, y):
-            if t < T:
-                # Force nécessaire pour suivre la trajectoire désirée
-                f = M * (desired_acceleration(t) + g)
-                f = max(0, f)  # Force ne peut pas être négative
-            else:
-                f = M * g  # Hover après atterrissage
-            return np.array([f, 0.0])
-    
-        y0_4 = [0.0, 0.0, 10.0, 0.0, 0.0, 0.0]
-        sol4 = redstart_solve(t_span, y0_4, f_phi_4)
-    
-        # S'assurer que la solution est valide
-        x4 = lambda t: sol4(t)[0] if t <= T else 0.0
-        y4 = lambda t: max(sol4(t)[2], 0) if t <= T else 0.0  # Ne pas descendre sous le sol
-        theta4 = lambda t: sol4(t)[4] if t <= T else 0.0
-    
-        def f4(t):
-            if t < T:
-                state = sol4(t)
-                f, phi = f_phi_4(t, state)
-                return f
-            return M * g
-    
-        def phi4(t):
-            if t < T:
-                state = sol4(t)
-                f, phi = f_phi_4(t, state)
-                return phi
-            return 0.0
-    
-        anim4 = booster_anim(x4, y4, theta4, f4, phi4, T=T)
-    
-        # ------------------------------------------------------------
-        # DISPLAY with proper formatting
-        # ------------------------------------------------------------
-        return mo.vstack([
-            mo.md("### Animated Simulation Results"),
-            mo.hstack(
-                [
-                    mo.vstack([
-                        mo.md("**1. Free Fall**"),
-                        mo.Html(world([-3, 3, -2, 12], anim1))
-                    ]),
-                    mo.vstack([
-                        mo.md("**2. Hover (f = Mg)**"),
-                        mo.Html(world([-3, 3, -2, 12], anim2))
-                    ]),
-                ],
-                justify="space-around"
-            ),
-            mo.hstack(
-                [
-                    mo.vstack([
-                        mo.md("**3. Tilted Thrust (φ = π/8)**"),
-                        mo.Html(world([-3, 3, -2, 12], anim3))
-                    ]),
-                    mo.vstack([
-                        mo.md("**4. Controlled Landing**"),
-                        mo.Html(world([-3, 3, -2, 12], anim4))
-                    ]),
-                ],
-                justify="space-around"
-            )
-        ])
-
-    animated_simulation_results()
     return
 
 
