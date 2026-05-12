@@ -1,0 +1,17 @@
+Update available 0.20.4 -> 0.23.5
+Run python -m pip install --upgrade marimo to upgrade.
+
+
+        Create or edit notebooks in your browser 
+
+          URL: http://127.0.0.1:2718?access_token=D3o6vjoPfviaAqA_8dUirQ
+
+
+        The Python kernel for file C:\Users\user\redstart\notebook-day-1.py died unexpectedly.
+
+
+        The Python kernel for file C:\Users\user\redstart\notebook-day-2.py died unexpectedly.
+
+
+        The Python kernel for file C:\Users\user\redstart\notebook-day-2.py died unexpectedly.
+

@@ -4,12 +4,11 @@ __generated_with = "0.20.4"
 app = marimo.App()
 
 
-app._unparsable_cell(
-    r"""
-    liimport marimo as mo
-    """,
-    name="_"
-)
+@app.cell
+def _():
+    import marimo as mo
+
+    return (mo,)
 
 
 @app.cell(hide_code=True)
@@ -1137,56 +1136,6 @@ def _(mo):
     return
 
 
-@app.cell
-def _(mo):
-    mo.md(r"""
-    ### 🔓 Solution
-
-    At an equilibrium we need $\dot{s} = 0$, i.e. all six components of $F(s, f, \phi)$ vanish.
-
-    The velocity components give immediately:
-    $$
-    \dot{x} = v_x = 0, \quad \dot{y} = v_y = 0, \quad \dot{\theta} = \omega = 0.
-    $$
-
-    The second-order conditions (zero acceleration) give:
-    $$
-    \begin{aligned}
-    \ddot{x} &= -\frac{f}{M}\sin(\theta+\phi) = 0, \\
-    \ddot{y} &= \frac{f}{M}\cos(\theta+\phi) - g = 0, \\
-    \ddot{\theta} &= -\frac{f}{J}\frac{\ell}{2}\sin\phi = 0.
-    \end{aligned}
-    $$
-
-    **Step 1 — solve $\ddot{\theta} = 0$.**
-    Since $f > 0$ and $\ell, J > 0$, we need $\sin\phi = 0$.
-    With $|\phi| < \pi/2$ the only solution is $\phi = 0$.
-
-    **Step 2 — solve $\ddot{x} = 0$.**
-    Substituting $\phi = 0$ gives $-\tfrac{f}{M}\sin\theta = 0$.
-    Since $f > 0$, we need $\sin\theta = 0$, and with $|\theta| < \pi/2$: $\theta = 0$.
-
-    **Step 3 — solve $\ddot{y} = 0$.**
-    With $\theta = \phi = 0$ this reduces to $\tfrac{f}{M} - g = 0$, hence $f = Mg$.
-
-    **Step 4 — position variables $x$ and $y$.**
-    The coordinates $(x, y)$ do not appear anywhere in $F(s, f, \phi)$ — the forces and
-    torques depend only on velocities, angles, and inputs, not on absolute position.
-    Therefore $x$ and $y$ are **completely free**: any position is an equilibrium.
-
-    **Conclusion.**
-    There exists a whole family of equilibria parametrised by $(x, y) \in \mathbb{R}^2$:
-    $$
-    s^* = (x,\ 0,\ y,\ 0,\ 0,\ 0), \qquad f^* = Mg, \qquad \phi^* = 0.
-    $$
-    The booster must be perfectly **vertical** ($\theta = 0$), **at rest**
-    ($\dot{x} = \dot{y} = \dot{\theta} = 0$), nozzle **aligned with its axis** ($\phi = 0$),
-    and thrust **exactly balancing gravity** ($f = Mg$) —
-    but it may hover at **any horizontal position and any height**.
-    """)
-    return
-
-
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
@@ -1270,80 +1219,73 @@ def _(mo):
     return
 
 
-@app.cell
-def _():
-    return
-
-
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    We choose the state vector and inputs as:
+    Le vecteur d'état est
 
     $$
-    s = \begin{bmatrix} \Delta x \\ \Delta\dot{x} \\ \Delta y \\ \Delta\dot{y} \\ \Delta\theta \\ \Delta\dot{\theta} \end{bmatrix} \in \mathbb{R}^6, \qquad u = \begin{bmatrix} \Delta f \\ \Delta\phi \end{bmatrix} \in \mathbb{R}^2
+    s = (\Delta x,\; \Delta v_x,\; \Delta y,\; \Delta v_y,\; \Delta\theta,\; \Delta\omega)^\top \in \mathbb{R}^6,
     $$
 
-    The linearized system writes $\dot{s} = As + Bu$ with:
+    le vecteur de commande est $u = (\Delta f,\; \Delta\phi)^\top \in \mathbb{R}^2$.
+
+    Le modèle linéarisé s'écrit $\dot{s} = A s + B u$ avec
 
     $$
-    A = \begin{bmatrix}
+    A =
+    \begin{pmatrix}
     0 & 1 & 0 & 0 & 0 & 0 \\
     0 & 0 & 0 & 0 & -g & 0 \\
     0 & 0 & 0 & 1 & 0 & 0 \\
     0 & 0 & 0 & 0 & 0 & 0 \\
     0 & 0 & 0 & 0 & 0 & 1 \\
     0 & 0 & 0 & 0 & 0 & 0
-    \end{bmatrix}, \qquad
-    B = \begin{bmatrix}
+    \end{pmatrix},
+    \qquad
+    B =
+    \begin{pmatrix}
     0 & 0 \\
     0 & -g \\
     0 & 0 \\
-    \frac{1}{M} & 0 \\
+    \tfrac{1}{M} & 0 \\
     0 & 0 \\
-    0 & -\frac{6g}{\ell}
-    \end{bmatrix}
+    0 & -\tfrac{Mg\ell}{2J}
+    \end{pmatrix}.
     $$
 
-    The matrix $A$ encodes the free dynamics: the only coupling is $\Delta\ddot{x} = -g\,\Delta\theta$
-    (a tilt induces a lateral acceleration).
+    **Lecture physique.**
 
-    The matrix $B$ encodes the effect of the inputs:
-    - $\Delta f$ acts only on $\Delta\ddot{y}$ (vertical dynamics),
-    - $\Delta\phi$ acts on $\Delta\ddot{x}$ and $\Delta\ddot{\theta}$ (lateral dynamics).
+    - Dans $A$, le seul terme non trivial hors cinématique est $A_{2,5} = -g$ : une inclinaison $\Delta\theta$ génère une accélération horizontale $-g\,\Delta\theta$, car la poussée $Mg$ (verticale à l'équilibre) acquiert une composante latérale au premier ordre.
 
-    The system is therefore naturally decoupled into two independent subsystems:
-
-    | Subsystem | Variables | Input |
-    |:---:|:---:|:---:|
-    | Lateral | $\Delta x,\, \Delta\dot{x},\, \Delta\theta,\, \Delta\dot{\theta}$ | $\Delta\phi$ |
-    | Vertical | $\Delta y,\, \Delta\dot{y}$ | $\Delta f$ |
+    - Dans $B$, $\Delta f$ agit uniquement sur $\Delta\ddot{y}$ (colonne 1), et $\Delta\phi$ agit à la fois sur $\Delta\ddot{x}$ et $\Delta\ddot{\theta}$ (colonne 2) : incliner le réacteur dévie simultanément la trajectoire horizontale et fait pivoter le booster.
     """)
     return
 
 
 @app.cell
-def _(M, g, l, np):
-    A = np.array([
-        [0, 1,  0, 0,  0,       0],
-        [0, 0,  0, 0,  -g,      0],
-        [0, 0,  0, 1,  0,       0],
-        [0, 0,  0, 0,  0,       0],
-        [0, 0,  0, 0,  0,       1],
-        [0, 0,  0, 0,  0,       0],
-    ])
+def _(J, M, g, l, np):
+    A = np.array([
+        [0,  1,  0,  0,  0,           0],
+        [0,  0,  0,  0, -g,           0],
+        [0,  0,  0,  1,  0,           0],
+        [0,  0,  0,  0,  0,           0],
+        [0,  0,  0,  0,  0,           1],
+        [0,  0,  0,  0,  0,           0],
+    ], dtype=float)
 
-    B = np.array([
-        [0,      0         ],
-        [0,      -g        ],
-        [0,      0         ],
-        [1/M,    0         ],
-        [0,      0         ],
-        [0,      -6*g/l    ],
-    ])
+    B = np.array([
+        [0,      0           ],
+        [0,     -g           ],
+        [0,      0           ],
+        [1/M,    0           ],
+        [0,      0           ],
+        [0,     -M*g*l/(2*J) ],
+    ], dtype=float)
 
-    A, B
-    return
+    print("A =\n", A)
+    print("B =\n", B)
+    return A, B
 
 
 @app.cell(hide_code=True)
@@ -1359,10 +1301,95 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
+    Un équilibre est **asymptotiquement stable** si et seulement si toutes les valeurs propres de $A$ ont une partie réelle **strictement négative**.
+
+    **Calcul analytique.**
+    La matrice $A$ est bloc-diagonale avec trois blocs $2\times 2$ identiques :
+
+    $$
+    \begin{pmatrix} 0 & 1 \\ 0 & 0 \end{pmatrix},
+    $$
+
+    chacun représentant un **intégrateur double** (double pôle en $\lambda = 0$). Toutes les valeurs propres de $A$ sont donc $\lambda = 0$ avec multiplicité algébrique 6.
+
+    **Conclusion.**
+    L'équilibre n'est **pas asymptotiquement stable** — il n'est même pas stable au sens de Lyapunov.
+
+    **Interprétation physique.**
+
+    | Sous-système | Comportement libre sous perturbation initiale |
+    |---|---|
+    | $(\Delta x, \Delta v_x)$ | dérive linéaire en $x$ si $\Delta v_x(0) \neq 0$ |
+    | $(\Delta y, \Delta v_y)$ | dérive linéaire en $y$ si $\Delta v_y(0) \neq 0$ |
+    | $(\Delta\theta, \Delta\omega)$ | rotation uniforme si $\Delta\omega(0) \neq 0$, puis $\Delta x$ dérive via le couplage $-g\,\Delta\theta$ |
+
+    Physiquement, un booster en lévitation sans contrôle actif ne reste pas à l'équilibre : toute petite perturbation en vitesse angulaire produit une inclinaison croissante, qui elle-même génère une accélération horizontale non compensée. Le **contrôle actif est donc indispensable** pour stabiliser le système.
+    """)
+    return
+
+
+@app.cell
+def _(A, np):
+    eigenvalues = np.linalg.eigvals(A)
+    print("Valeurs propres de A :", eigenvalues)
+    print("Parties réelles      :", eigenvalues.real)
+    print("Asymptotiquement stable ?", bool(np.all(eigenvalues.real < 0)))
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
     # 🧩 Controllability
 
     Is the linearized model controllable?
     """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    **Critère de Kalman.**
+    Le système linéaire $\dot{s} = As + Bu$, avec $s\in\mathbb{R}^6$ et $u\in\mathbb{R}^2$, est **complètement commandable** si et seulement si la matrice de commandabilité
+
+    $$
+    \mathcal{C} = \begin{bmatrix} B & AB & A^2B & A^3B & A^4B & A^5B \end{bmatrix}
+    \in \mathbb{R}^{6 \times 12}
+    $$
+
+    est de rang plein (rang 6).
+
+    **Vérification par blocs.**
+    La structure découplée du système permet une analyse sous-système par sous-système :
+
+    | Sous-système | État | Commande | Commandable ? | Raison |
+    |---|---|---|---|---|
+    | Vertical | $(\Delta y, \Delta v_y)$ | $\Delta f$ | YES | Intégrateur double directement commandé ($B_{4,1} = 1/M \neq 0$) |
+    | Horizontal + attitude | $(\Delta x, \Delta v_x, \Delta\theta, \Delta\omega)$ | $\Delta\phi$ | YES | $\Delta\phi$ agit directement sur $\Delta\dot{v}_x$ et $\Delta\dot{\omega}$ ; par itération $A^k B$, on atteint $\Delta\omega$, $\Delta\theta$, $\Delta v_x$, $\Delta x$ en au plus 3 étapes |
+
+    Le rang global vaut bien **6** : le système est complètement commandable.
+
+    **Conséquence.**
+    Puisque le système est commandable, il est possible de placer les pôles de la boucle fermée $A - BK$ en n'importe quelle position souhaitée par un retour d'état $u = -Ks$. En particulier, on peut rendre le système **asymptotiquement stable**, ce qui justifie la conception des contrôleurs des sections suivantes.
+    """)
+    return
+
+
+@app.cell
+def _(A, B, np):
+    n = A.shape[0]
+    C_ctrl = B.copy()
+    Ak = np.eye(n)
+    for k in range(1, n):
+        Ak = Ak @ A
+        C_ctrl = np.hstack([C_ctrl, Ak @ B])
+
+    rank = np.linalg.matrix_rank(C_ctrl)
+    print(f"Taille de la matrice de commandabilité : {C_ctrl.shape}")
+    print(f"Rang de la matrice de commandabilité   : {rank}")
+    print(f"Dimension de l'espace d'état           : {n}")
+    print(f"Système commandable ?                  : {rank == n}")
     return
 
 
