@@ -1200,7 +1200,7 @@ def _(mo):
 
 @app.cell
 def _():
-    # 🔓 Solution
+    ### 🔓 Solution
     return
 
 
@@ -1270,11 +1270,14 @@ def _(mo):
     return
 
 
-@app.cell(hide_code=True)
+@app.cell
+def _():
+    return
+
+
+@app.cell
 def _(mo):
     mo.md(r"""
-    ### 🔓 Solution
-
     We choose the state vector and inputs as:
 
     $$
@@ -1321,26 +1324,26 @@ def _(mo):
 
 @app.cell
 def _(M, g, l, np):
-    A = np.array([
-        [0, 1,  0, 0,  0,       0],
-        [0, 0,  0, 0,  -g,      0],
-        [0, 0,  0, 1,  0,       0],
-        [0, 0,  0, 0,  0,       0],
-        [0, 0,  0, 0,  0,       1],
-        [0, 0,  0, 0,  0,       0],
-    ])
+    A = np.array([
+        [0, 1,  0, 0,  0,       0],
+        [0, 0,  0, 0,  -g,      0],
+        [0, 0,  0, 1,  0,       0],
+        [0, 0,  0, 0,  0,       0],
+        [0, 0,  0, 0,  0,       1],
+        [0, 0,  0, 0,  0,       0],
+    ])
 
-    B = np.array([
-        [0,      0],
-        [0,      -g],
-        [0,      0],
-        [1/M,    0],
-        [0,      0],
-        [0,      -6*g/l],
-    ])
+    B = np.array([
+        [0,      0         ],
+        [0,      -g        ],
+        [0,      0         ],
+        [1/M,    0         ],
+        [0,      0         ],
+        [0,      -6*g/l    ],
+    ])
 
     A, B
-    return A, B
+    return
 
 
 @app.cell(hide_code=True)
