@@ -1804,11 +1804,6 @@ def _(mo):
     return
 
 
-@app.cell
-def _():
-    return
-
-
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
@@ -1910,7 +1905,7 @@ def _(g, gamma, np):
 
     print("K_pp =", K[0])
     print(f"K_pp = [{K[0,0]:.3f}, {K[0,1]:.3f}, {K[0,2]:.3f}, {K[0,3]:.3f}]")
-    return
+    return (ct,)
 
 
 @app.cell(hide_code=True)
@@ -1922,6 +1917,146 @@ def _(mo):
 
     Explain how you find the proper design parameters!
     """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### 🔓 Solution
+
+    We consider the reduced lateral system (4 states):
+
+    $$
+    \dot{s} = A s + B u, \quad
+    s = \begin{bmatrix} \Delta x \\ \Delta v_x \\ \Delta \theta \\ \Delta \omega \end{bmatrix}, \quad
+    u = \Delta\phi,
+    $$
+
+    with
+
+    $$
+    A = \begin{bmatrix}
+    0 & 1 & 0 & 0 \\
+    0 & 0 & -g & 0 \\
+    0 & 0 & 0 & 1 \\
+    0 & 0 & 0 & 0
+    \end{bmatrix}, \qquad
+    B = \begin{bmatrix}
+    0 \\ -g \\ 0 \\ -\dfrac{Mg\ell}{2J}
+    \end{bmatrix}.
+    $$
+
+    We seek an optimal control law $u(t) = -K_{oc} \cdot s(t)$ that minimizes the quadratic cost function:
+
+    $$
+    J = \int_0^{\infty} \left( s(t)^T Q \, s(t) + R \, u(t)^2 \right) dt
+    $$
+
+    where $Q \in \mathbb{R}^{4 \times 4}$ and $R > 0$.
+
+    ---
+
+    ### 1. Design strategy
+
+    **Choosing $Q$ and $R$ for the 4-state system:**
+
+    We want $\Delta x \to 0$ in approximately 20 seconds.
+
+    **Bryson's rule (initial guess):**
+
+    | State | Max acceptable value | $Q_{ii} = 1/(\text{max}^2)$ |
+    |:---:|:---:|:---:|
+    | $\Delta x$ | 1 m | $Q_{11} = 1$ |
+    | $\Delta v_x$ | 2 m/s | $Q_{22} = 0.25$ |
+    | $\Delta \theta$ | 0.8 rad (~45°) | $Q_{33} = 1.56$ |
+    | $\Delta \omega$ | 0.5 rad/s | $Q_{44} = 4$ |
+    | $\Delta\phi$ (input) | 0.5 rad | $R = 4$ |
+
+    **Tuning adjustments for ~20s settling:**
+    - Increase $Q_{11}$ to penalize position error more → faster response
+    - Decrease $R$ for more aggressive control
+
+    Let's try: $Q_{11} = 5$, $Q_{33} = 3$, $R = 2$
+    """)
+    return
+
+
+@app.cell
+def _(ct, g, gamma, np, plt, t):
+    # Reduced lateral system (4 states)
+    A2 = np.array([
+        [0, 1, 0, 0],
+        [0, 0, -g, 0],
+        [0, 0, 0, 1],
+        [0, 0, 0, 0]
+    ])
+
+    B2 = np.array([[0], [-g], [0], [-gamma]])
+
+    # Tuned Q and R matrices (4x4)
+    Q1 = np.diag([5.0, 0.25, 3.0, 4.0])
+    R = np.array([[2.0]])
+
+    # Solve LQR
+    K1, S, E = ct.lqr(A2, B2, Q1, R)
+
+    K_oc = K1[0]
+
+    print("Optimal gain matrix K_oc =", K_oc)
+    print(f"K_oc = [{K_oc[0]:.3f}, {K_oc[1]:.3f}, {K_oc[2]:.3f}, {K_oc[3]:.3f}]")
+    print(f"\nClosed-loop poles: {E}")
+
+    # Verify settling time
+    A_cl = A2 - B2 @ K1
+    s0 = np.array([1.0, 0.0, 0.0, 0.0])  # initial position offset
+
+    # Simulate
+    def simulate(A_cl, s0, t):
+        s = np.zeros((len(t), len(s0)))
+        s[0] = s0
+        dt = t[1] - t[0]
+        for i in range(1, len(t)):
+            s[i] = s[i-1] + dt * (A_cl @ s[i-1])
+        return s
+
+    s_t = simulate(A_cl, s0, t)
+
+    # Find settling time (within 2% of final)
+    idx_settle = np.where(np.abs(s_t[:, 0]) < 0.02)[0]
+    if len(idx_settle) > 0:
+        t_settle = t[idx_settle[0]]
+        print(f"\nSettling time for Δx (2%): {t_settle:.1f} s")
+    else:
+        print("\nSettling time > 30 s")
+
+    # Plot response
+    fig1, axes1 = plt.subplots(2, 2, figsize=(10, 6))
+
+    axes1[0, 0].plot(t, s_t[:, 0], 'b-')
+    axes1[0, 0].set_ylabel(r'$\Delta x$ [m]')
+    axes1[0, 0].set_title('Position')
+    axes1[0, 0].grid(True)
+
+    axes1[0, 1].plot(t, s_t[:, 1], 'g-')
+    axes1[0, 1].set_ylabel(r'$\Delta v_x$ [m/s]')
+    axes1[0, 1].set_title('Velocity')
+    axes1[0, 1].grid(True)
+
+    axes1[1, 0].plot(t, s_t[:, 2], 'r-')
+    axes1[1, 0].set_ylabel(r'$\Delta \theta$ [rad]')
+    axes1[1, 0].set_xlabel('Time [s]')
+    axes1[1, 0].set_title('Tilt angle')
+    axes1[1, 0].grid(True)
+
+    axes1[1, 1].plot(t, s_t[:, 3], 'm-')  # Changed 't' to 't' (was 't')
+    axes1[1, 1].set_ylabel(r'$\Delta \omega$ [rad/s]')
+    axes1[1, 1].set_xlabel('Time [s]')
+    axes1[1, 1].set_title('Angular velocity')
+    axes1[1, 1].grid(True)
+
+    plt.tight_layout()
+    plt.show()
     return
 
 
