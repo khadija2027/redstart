@@ -1082,6 +1082,7 @@ def _(mo):
     What are the possible equilibria of the system for constant inputs $f$ and $\phi$ and what are the corresponding values of these inputs?
     """)
     return
+<<<<<<< HEAD
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
@@ -1121,6 +1122,9 @@ f = M*g
 # Velocities are zero, booster is vertical (theta=0)
 # Thrust points straight down (phi=0) and balances weight (f=M*g)
     return
+=======
+
+>>>>>>> f61625733386ad91e34d7a8b401d156227f29603
 
 @app.cell(hide_code=True)
 def _(mo):
