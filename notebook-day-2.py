@@ -391,7 +391,8 @@ def _(mo):
         t = np.linspace(t_span[0], t_span[1], 1000)
         y_t = sol(t)[2]
         plt.plot(t, y_t, label=r"$y(t)$ (height in meters)")
-        plt.plot(t, l * np.ones_like(t), color="grey", ls="--", label=r"$y=\ell$")
+        plt.plot(t, l * np.ones_like(t), color="grey",
+                 ls="--", label=r"$y=\ell$")
         plt.title("Free Fall")
         plt.xlabel("time $t$")
         plt.grid(True)
@@ -456,14 +457,16 @@ def _(mo):
 def _(l, np, plt, redstart_solve):
     def free_fall_example():
         t_span = [0.0, 5.0]
-        y0 = [0.0, 0.0, 10.0, 0.0, 0.0, 0.0] # [x, vx, y, vy, theta, omega]
+        y0 = [0.0, 0.0, 10.0, 0.0, 0.0, 0.0]  # [x, vx, y, vy, theta, omega]
+
         def f_phi(t, y):
-            return np.array([0.0, 0.0]) # [f, phi]
+            return np.array([0.0, 0.0])  # [f, phi]
         sol = redstart_solve(t_span, y0, f_phi)
         t = np.linspace(t_span[0], t_span[1], 1000)
         y_t = sol(t)[2]
         plt.plot(t, y_t, label=r"$y(t)$ (height in meters)")
-        plt.plot(t, l * np.ones_like(t), color="grey", ls="--", label=r"$y=\ell$")
+        plt.plot(t, (l / 2) * np.ones_like(t),
+                 color="grey", ls="--", label=r"$y=\ell/2$")
         plt.title("Free Fall")
         plt.xlabel("time $t$")
         plt.grid(True)
@@ -545,13 +548,15 @@ def _(l, np, plt, redstart_solve):
     def controlled_landing_example():
         t_span = [0.0, 5.0]
         y0 = [0.0, 0.0, 10.0, -2.0, 0.0, 0.0]
+
         def f_phi_smooth_landing(t, state):
             return np.array([48 / 125 * t + 11 / 25, 0])
         sol = redstart_solve(t_span, y0, f_phi=f_phi_smooth_landing)
         t = np.linspace(t_span[0], t_span[1], 1000)
         y_t = sol(t)[2]
         plt.plot(t, y_t, label=r"$y(t)$ (height in meters)")
-        plt.plot(t, (l / 2) * np.ones_like(t), color="grey", ls="--", label=r"$y=\ell/2$")
+        plt.plot(t, (l / 2) * np.ones_like(t),
+                 color="grey", ls="--", label=r"$y=\ell/2$")
         plt.title("Controlled Landing")
         plt.xlabel("time $t$")
         plt.grid(True)
@@ -647,22 +652,25 @@ def _(mo):
 @app.cell
 def _(svg, transform):
     def world(view_box, *objects):
-        x_min, x_max, y_min, y_max = view_box    
+        x_min, x_max, y_min, y_max = view_box
         width, height = x_max - x_min, y_max - y_min
 
         return svg.svg(
-          xmlns="http://www.w3.org/2000/svg",
-          viewBox=f"0 0 {width} {height}",
-          style="max-height:80vh")(
-              transform.translate(x=-x_min, y=y_max)(
-                  transform.scale(y=-1.0)(
-                      # Sky
-                      svg.rect(x=-1e3, y=0, width=2e3, height=1e3, fill="lightskyblue"),
-                      # Ground
-                      svg.rect(x=-1e3, y=-2e3, width=2e3, height=2e3, fill="sandybrown"),
-                      # Target 
-                      svg.rect(x=-1, y =-1, width=2, height=1, fill="lightgreen"),
-                      *objects,
+            xmlns="http://www.w3.org/2000/svg",
+            viewBox=f"0 0 {width} {height}",
+            style="max-height:80vh")(
+            transform.translate(x=-x_min, y=y_max)(
+                transform.scale(y=-1.0)(
+                    # Sky
+                    svg.rect(x=-1e3, y=0, width=2e3,
+                             height=1e3, fill="lightskyblue"),
+                    # Ground
+                    svg.rect(x=-1e3, y=-2e3, width=2e3,
+                             height=2e3, fill="sandybrown"),
+                    # Target
+                    svg.rect(x=-1, y=-1, width=2,
+                             height=1, fill="lightgreen"),
+                    *objects,
                 )
             )
         )
@@ -681,9 +689,9 @@ def _(mo, svg, world):
             # Display a world with a black square on top of the landing pad
             mo.Html(
                 world(
-                    [-3, 3, -2, 4], 
+                    [-3, 3, -2, 4],
                     svg.rect(x=-1, y=0, width=2, height=2, fill="black"),
-                )    
+                )
             ),
             # Display a world with a red square in the top-left corner of the view box
             # and a blue square on the top-right corner of the view box.
@@ -691,7 +699,7 @@ def _(mo, svg, world):
                 world(
                     [-3, 3, -2, 4],
                     svg.rect(x=-3, y=2, width=2, height=2, fill="red"),
-                    svg.rect(x=1, y=2, width=2, height=2, fill="blue"),                
+                    svg.rect(x=1, y=2, width=2, height=2, fill="blue"),
                 )
             )
         ],
@@ -872,10 +880,10 @@ def _(M, animate_transform, g, l, np, svg):
     def booster_anim(x, y, theta, f, phi, T):
         if not callable(theta):
             theta_cst = theta
-            theta = lambda t: theta_cst
+            def theta(t): return theta_cst
         if not callable(phi):
             phi_cst = phi
-            phi = lambda t: phi_cst
+            def phi(t): return phi_cst
 
         def theta_deg(t):
             return theta(t) / np.pi * 180.0
@@ -915,14 +923,19 @@ def _(M, animate_transform, g, l, np, svg):
 def _(M, booster_anim, g, l, np):
     def booster_anim_0():
         T = 5.0
+
         def x(t):
             return -l/2 + l * (t / T)
+
         def y(t):
             return l/2 + l/2 * (t / T)
+
         def theta(t):
             return (t / T) * 2 * np.pi
+
         def f(t):
             return M * g * (t / T)
+
         def phi(t):
             return 2 * np.pi * (t / T)
         return booster_anim(x, y, theta, f, phi, T=T)
@@ -934,7 +947,7 @@ def _(M, booster_anim, g, l, np):
 def _(booster_anim_0, mo, world):
     mo.Html(
         world([-3, 3, -2, 4], booster_anim_0())
-    ).center() 
+    ).center()
     return
 
 
@@ -968,18 +981,19 @@ def _(mo):
 def _(booster_anim, mo, np, redstart_solve, world):
     def anim_1():
         t_span = [0.0, 5.0]
-        y0 = [0.0, 0.0, 10.0, 0.0, 0.0, 0.0] 
+        y0 = [0.0, 0.0, 10.0, 0.0, 0.0, 0.0]
+
         def f_phi(t, state):
             return np.array([0, 0])
         sol = redstart_solve(t_span, y0, f_phi)
-        x = lambda t: sol(t)[0]
-        y = lambda t: sol(t)[2]
-        theta = lambda t : sol(t)[4]
-        f = lambda t: f_phi(t, sol(t))[0]
-        phi = lambda t: f_phi(t, sol(t))[0]
+        def x(t): return sol(t)[0]
+        def y(t): return sol(t)[2]
+        def theta(t): return sol(t)[4]
+        def f(t): return f_phi(t, sol(t))[0]
+        def phi(t): return f_phi(t, sol(t))[0]
         return mo.Html(
             world(
-                [-3, 3, -2, 12], 
+                [-3, 3, -2, 12],
                 booster_anim(x, y, theta, f, phi, T=t_span[1])
             )
         ).center()
@@ -993,17 +1007,18 @@ def _(M, booster_anim, g, mo, np, redstart_solve, world):
     def anim_2():
         t_span = [0.0, 5.0]
         y0 = [0.0, 0.0, 10.0, 0.0, 0.0, 0.0]
+
         def f_phi(t, state):
             return np.array([M * g, 0])
         sol = redstart_solve(t_span, y0, f_phi)
-        x = lambda t: sol(t)[0]
-        y = lambda t: sol(t)[2]
-        theta = lambda t : sol(t)[4]
-        f = lambda t: f_phi(t, sol(t))[0]
-        phi = lambda t: f_phi(t, sol(t))[1]
+        def x(t): return sol(t)[0]
+        def y(t): return sol(t)[2]
+        def theta(t): return sol(t)[4]
+        def f(t): return f_phi(t, sol(t))[0]
+        def phi(t): return f_phi(t, sol(t))[1]
         return mo.Html(
             world(
-                [-3, 3, -2, 12], 
+                [-3, 3, -2, 12],
                 booster_anim(x, y, theta, f, phi, T=t_span[1])
             )
         ).center()
@@ -1017,17 +1032,18 @@ def _(M, booster_anim, g, mo, np, redstart_solve, world):
     def anim_3():
         t_span = [0.0, 5.0]
         y0 = [0.0, 0.0, 10.0, 0.0, 0.0, 0.0]
+
         def f_phi(t, state):
             return np.array([M * g, np.pi / 8])
         sol = redstart_solve(t_span, y0, f_phi)
-        x = lambda t: sol(t)[0]
-        y = lambda t: sol(t)[2]
-        theta = lambda t : sol(t)[4]
-        f = lambda t: f_phi(t, sol(t))[0]
-        phi = lambda t: f_phi(t, sol(t))[1]
+        def x(t): return sol(t)[0]
+        def y(t): return sol(t)[2]
+        def theta(t): return sol(t)[4]
+        def f(t): return f_phi(t, sol(t))[0]
+        def phi(t): return f_phi(t, sol(t))[1]
         return mo.Html(
             world(
-                [-3, 3, -2, 12], 
+                [-3, 3, -2, 12],
                 booster_anim(x, y, theta, f, phi, T=t_span[1])
             )
         ).center()
@@ -1041,17 +1057,18 @@ def _(booster_anim, mo, np, redstart_solve, world):
     def anim_4():
         t_span = [0.0, 5.0]
         y0 = [0.0, 0.0, 10.0, -2.0, 0.0, 0.0]
+
         def f_phi(t, state):
             return np.array([48 / 125 * t + 11 / 25, 0])
         sol = redstart_solve(t_span, y0, f_phi)
-        x = lambda t: sol(t)[0]
-        y = lambda t: sol(t)[2]
-        theta = lambda t : sol(t)[4]
-        f = lambda t: f_phi(t, sol(t))[0]
-        phi = lambda t: f_phi(t, sol(t))[1]
+        def x(t): return sol(t)[0]
+        def y(t): return sol(t)[2]
+        def theta(t): return sol(t)[4]
+        def f(t): return f_phi(t, sol(t))[0]
+        def phi(t): return f_phi(t, sol(t))[1]
         return mo.Html(
             world(
-                [-3, 3, -2, 12], 
+                [-3, 3, -2, 12],
                 booster_anim(x, y, theta, f, phi, T=t_span[1])
             )
         ).center()
@@ -1082,57 +1099,33 @@ def _(mo):
     What are the possible equilibria of the system for constant inputs $f$ and $\phi$ and what are the corresponding values of these inputs?
     """)
     return
-<<<<<<< HEAD
+
+
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
     ### 🔓 Solution
 
-# For equilibrium, all derivatives must be zero
-# Starting with the velocity components:
-# v_x = 0, v_y = 0, omega = 0
+    For equilibrium, all derivatives must be zero.
+    Starting with the velocity components:
+    $v_x = 0$, $v_y = 0$, $\omega = 0$
 
-# Then the acceleration equations give us:
+    Then the acceleration equations give us:
 
-# 1. Horizontal force balance
-# -f/M * sin(theta + phi) = 0
+    1.  **Horizontal force balance**
+        $$-f/M \sin(\theta + \phi) = 0$$
 
-# 2. Vertical force balance  
-# f/M * cos(theta + phi) - g = 0
+    2.  **Vertical force balance**
+        $$f/M \cos(\theta + \phi) - g = 0$$
 
-# 3. Torque balance
-# -(f/J)*(l/2)*sin(phi) = 0
+    3.  **Torque balance**
+        $$-(f/J)(\ell/2)\sin(\phi) = 0$$
 
-# Step 1: From torque balance
-# Since f>0, l>0, J>0, we need sin(phi)=0
-# With |phi| < pi/2, this means:
-phi = 0
+    - From torque balance, since $f>0$, $\ell>0$, $J>0$, we need $\sin(\phi)=0$. With $|\phi| < \pi/2$, this means $\phi = 0$.
 
-# Step 2: Plug phi=0 into horizontal equation
-# -(f/M)*sin(theta) = 0
-# Since f>0, sin(theta)=0. With |theta| < pi/2:
-theta = 0
+    - Plugging $\phi=0$ into the horizontal equation: $-(f/M)\sin(\theta) = 0$. Since $f>0$, $\sin(\theta)=0$. With $|\theta| < \pi/2$, this means $\theta = 0$.
 
-# Step 3: Plug theta=0 and phi=0 into vertical equation
-# f/M - g = 0
-# Therefore:
-f = M*g
-# So the equilibrium is:
-# Any position (x, y) works since they don't affect forces
-# Velocities are zero, booster is vertical (theta=0)
-# Thrust points straight down (phi=0) and balances weight (f=M*g)
-    return
-=======
-
->>>>>>> f61625733386ad91e34d7a8b401d156227f29603
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    ## 🧩 Linearized Model
-
-    Introduce the error variables $\Delta x$, $\Delta y$, $\Delta \theta$, and $\Delta f$ and $\Delta \phi$ of the state and input values with respect to the generic equilibrium configuration.
-    What are the linear ordinary differential equations that govern (approximately) these variables in a neighbourhood of the equilibrium?
+    - Plugging $\theta=0$ and $\phi=0$ into the vertical equation: $f/M - g = 0 \implies f = Mg$.
     """)
     return
 
@@ -1140,7 +1133,18 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## 🧩 Standard Form
+    # 🧩 Linearized Model
+
+    Introduce the error variables $\Delta x$, $\Delta y$, $\Delta \theta$, and $\Delta f$ and $\Delta \phi$ of the state and input values with respect to the generic equilibrium configuration.
+    What are the linear ordinary differential equations that govern(approximately) these variables in a neighbourhood of the equilibrium?
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    # 🧩 Standard Form
 
     1. What are the matrices $A$ and $B$ associated to this linear model in standard form?
     2. Define the corresponding NumPy arrays `A` and `B`.
@@ -1151,7 +1155,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## 🧩 Stability
+    # 🧩 Stability
 
     Is the generic equilibrium asymptotically stable?
     """)
@@ -1161,7 +1165,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## 🧩 Controllability
+    # 🧩 Controllability
 
     Is the linearized model controllable?
     """)
@@ -1171,11 +1175,11 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## 🧩 Lateral Dynamics
+    # 🧩 Lateral Dynamics
 
-    We limit our interest in the lateral position $x$, the tilt $\theta$ and their derivatives (we are for the moment fine with letting $y$ and $\dot{y}$ be uncontrolled). We also set $f = M g$ and control the system only with $\phi$.
+    We limit our interest in the lateral position $x$, the tilt $\theta$ and their derivatives(we are for the moment fine with letting $y$ and $\dot{y}$ be uncontrolled). We also set $f=M g$ and control the system only with $\phi$.
 
-    - What are the new (reduced) matrices $A$ and $B$ for this reduced system?
+    - What are the new(reduced) matrices $A$ and $B$ for this reduced system?
 
     - Check the controllability of this new system.
     """)
@@ -1185,10 +1189,10 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## 🧩 Linear Model in Free Fall
+    # 🧩 Linear Model in Free Fall
 
     Make graphs of $x(t)$ and $\theta(t)$ for the linearized model when
-    - $x(0)=0$, $\dot{x}(0)=0$, $\theta(0) = \pi/4$, $\dot{\theta}(0) =0$, and
+    - $x(0)=0$, $\dot{x}(0)=0$, $\theta(0)= \pi/4$, $\dot{\theta}(0)=0$, and
     - $\phi(t)=0$ at all times.
 
     What do you see? How do you explain it?
@@ -1199,35 +1203,34 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## 🧩 Manually Tuned Controller
+    # 🧩 Manually Tuned Controller
 
     Try to find the two missing coefficients of the matrix
 
     $$
-    K =
-    \begin{bmatrix}
+    K=begin{bmatrix}
     0 & 0 & ? & ?
     \end{bmatrix}
-    \in \mathbb{R}^{4\times 1}
+    \in mathbb{R} ^ {4\times 1}
     $$
 
     such that the control law
 
     $$
-    \Delta \phi(t) = - K \cdot
+    \Delta \phi(t)=- K \cdot
     \begin{bmatrix}
-    \Delta x(t) \\
-    \Delta \dot{x}(t) \\
-    \Delta \theta(t) \\
+    \Delta x(t)
+    \Delta \dot{x}(t)
+    \Delta \theta(t)
     \Delta \dot{\theta}(t)
-    \end{bmatrix} \in \mathbb{R}
+    \end{bmatrix} \in mathbb{R}
     $$
 
     manages  when
-    $\Delta x(0)=0$, $\Delta \dot{x}(0)=0$, $\Delta \theta(0) = 45 / 180  \times \pi$  and $\Delta \dot{\theta}(0) =0$ to:
+    $\Delta x(0)=0$, $\Delta \dot{x}(0)=0$, $\Delta \theta(0)=45 / 180  \times \pi$ and $\Delta \dot{\theta}(0)=0$ to:
 
     - make $\Delta \theta(t) \to 0$ in approximately $20$ sec (or less),
-    - $|\Delta \theta(t)| < \pi/2$ and $|\Delta \phi(t)| < \pi/2$ at all times,
+    - $|\Delta \theta(t) | < \pi/2$ and $|\Delta \phi(t) | < \pi/2$ at all times,
     - (but we don't care about a possible drift of $\Delta x(t)$).
 
     Explain your thought process, show your iterative guesses and simulations!
@@ -1240,29 +1243,27 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## 🧩 Controller Tuned with Pole Assignment
+    # 🧩 Controller Tuned with Pole Assignment
 
     Using pole assignement, find a matrix
 
     $$
-    K_{pp} =
-    \begin{bmatrix}
+    K_{pp}=begin{bmatrix}
     ? & ? & ? & ?
     \end{bmatrix}
-    \in \mathbb{R}^{4\times 1}
+    \in mathbb{R} ^ {4\times 1}
     $$
 
     such that the control law
 
     $$
-    \Delta \phi(t)
-    = - K_{pp} \cdot
+    \Delta \phi(t)=- K_{pp} \cdot
     \begin{bmatrix}
-    \Delta x(t) \\
-    \Delta \dot{x}(t) \\
-    \Delta \theta(t) \\
+    \Delta x(t)
+    \Delta \dot{x}(t)
+    \Delta \theta(t)
     \Delta \dot{\theta}(t)
-    \end{bmatrix} \in \mathbb{R}
+    \end{bmatrix} \in mathbb{R}
     $$
 
     satisfies the conditions defined for the manually tuned controller and additionally:
@@ -1279,7 +1280,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## 🧩 Controller Tuned with Optimal Control
+    # 🧩 Controller Tuned with Optimal Control
 
     Using optimal control, find a gain matrix $K_{oc}$ that satisfies the same set of requirements that the one defined using pole placement.
 
@@ -1291,9 +1292,9 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## 🧩 Validation
+    # 🧩 Validation
 
-    Test the two control strategies (pole placement and optimal control) on the "true" (nonlinear) model with an animation. Check that both controllers achieve their goal; otherwise, go back to the drawing board and tweak the design parameters until they do!
+    Test the two control strategies(pole placement and optimal control) on the "true" (nonlinear) model with an animation. Check that both controllers achieve their goal; otherwise, go back to the drawing board and tweak the design parameters until they do!
     """)
     return
 
