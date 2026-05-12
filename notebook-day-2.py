@@ -1524,7 +1524,7 @@ def _(A, B, J, M, g, l, np):
 
     print(f"Controllability matrix rank: {rank_}/4")
     print("System is controllable." if rank_ == 4 else "System is not controllable.")
-    return
+    return (gamma,)
 
 
 @app.cell(hide_code=True)
@@ -1538,11 +1538,6 @@ def _(mo):
 
     What do you see? How do you explain it?
     """)
-    return
-
-
-@app.cell
-def _():
     return
 
 
@@ -1591,11 +1586,11 @@ def _(mo):
 
     - $\theta$ remains constant at $\pi/4$ because there is no torque ($\Delta\phi = 0$ and no damping).
     - The constant tilt produces a constant horizontal acceleration $a_x = -g\tan(\theta) \approx -g\theta$ (small angle approximation).
-    - The drone accelerates horizontally like a free-falling object under a constant sideways force.
+    - The system accelerates horizontally like a free-falling object under a constant sideways force.
     - Position $x(t)$ follows a **parabolic trajectory** in time: $x(t) \propto -t^2$.
 
     **What do we see?**
-    The drone drifts indefinitely in the negative $x$ direction with ever-increasing speed. The tilt never returns to zero. This is **unstable behavior** in the sense that the drone will continue accelerating sideways without bound.
+    The system drifts indefinitely in the negative $x$ direction with ever-increasing speed. The tilt never returns to zero. This is **unstable behavior** in the sense that the drone will continue accelerating sideways without bound.
     """)
     return
 
@@ -1630,7 +1625,7 @@ def _(g, np, plt):
     print(f"  x = {x[-1]:.2f} m")
     print(f"  vx = {vx[-1]:.2f} m/s")
     print(f"  theta = {theta[-1]:.2f} rad ({np.degrees(theta[-1]):.1f} deg)")
-    return
+    return t, x
 
 
 @app.cell(hide_code=True)
@@ -1676,6 +1671,105 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
+    ### 🔓 Solution
+
+    **Linear Model in Free Fall (No Control, $\phi(t)=0$)**
+
+    We consider the linearized lateral dynamics with zero input ($\Delta\phi = 0$) and initial conditions:
+
+    $$
+    x(0) = 0,\quad \dot{x}(0) = 0,\quad \theta(0) = \frac{\pi}{4},\quad \dot{\theta}(0) = 0.
+    $$
+
+    The linearized equations reduce to:
+
+    $$
+    \begin{aligned}
+    \Delta\dot{x} &= \Delta v_x, \\
+    \Delta\dot{v}_x &= -g\,\Delta\theta, \\
+    \Delta\dot{\theta} &= \Delta\omega, \\
+    \Delta\dot{\omega} &= 0.
+    \end{aligned}
+    $$
+
+    **Analytical solution.**
+
+    Since $\Delta\dot{\omega} = 0$ and $\Delta\omega(0) = 0$, we have $\Delta\omega(t) = 0$.
+    Therefore $\Delta\dot{\theta} = 0$, so $\Delta\theta(t) = \Delta\theta(0) = \pi/4$ (constant tilt).
+
+    The horizontal acceleration is constant: $\Delta\dot{v}_x = -g \cdot (\pi/4)$.
+    Integrating with zero initial velocity:
+
+    $$
+    \Delta v_x(t) = -\frac{g\pi}{4}\,t.
+    $$
+
+    Integrating again with zero initial position:
+
+    $$
+    \Delta x(t) = -\frac{g\pi}{8}\,t^2.
+    $$
+
+    **Graphs and interpretation.**
+
+    The graphs show:
+    - **Tilt angle $\theta(t)$** remains constant at $\pi/4$ (45°) for all time.
+    - **Horizontal position $x(t)$** follows a downward parabola, accelerating indefinitely in the negative direction.
+
+    **What do we see?**
+    The drone drifts sideways with ever-increasing speed. The tilt never returns to zero. This behavior is **unstable** — a small initial tilt causes unbounded horizontal drift without any restoring torque.
+
+    **Why does this happen?**
+    - With $\phi = 0$, the propeller thrust is aligned with the body ($\theta$).
+    - The thrust vector has a constant horizontal component $Mg\sin\theta \approx Mg\,\theta$ (small angle).
+    - No torque acts on the drone because $\phi = 0$ and $f = Mg$, so $\ddot{\theta} = 0$.
+    - The initial tilt persists forever, producing constant horizontal acceleration.
+    - The linear model neglects the reduction of vertical lift ($Mg\cos\theta$), so the drone never falls; it just slides sideways indefinitely.
+    """)
+    return
+
+
+@app.cell
+def _(g, np, plt, t, x):
+    theta0_ = np.pi / 4   # 45 degrees
+
+    t_ = np.linspace(0, 5, 500)
+
+    # Analytical solution
+    theta_ = theta0_ * np.ones_like(t)
+    x_ = -0.5 * g * theta0_ * t**2
+
+    fig_, axes_ = plt.subplots(2, 1, figsize=(8, 6))
+
+    axes_[0].plot(t_, x_, 'b-', linewidth=2)
+    axes_[0].set_ylabel(r'$x(t)$ [m]')
+    axes_[0].set_title('Horizontal position (free fall, no control)')
+    axes_[0].grid(True)
+
+    axes_[1].plot(t_, theta_, 'r-', linewidth=2)
+    axes_[1].set_ylabel(r'$\theta(t)$ [rad]')
+    axes_[1].set_xlabel('Time [s]')
+    axes_[1].set_title('Tilt angle (remains constant)')
+    axes_[1].grid(True)
+
+    plt.tight_layout()
+    plt.show()
+
+    print(f"After 5 seconds:")
+    print(f"  x(5) = {x[-1]:.2f} m")
+    print(f"  θ(5) = {theta_[-1]:.2f} rad ({np.degrees(theta_[-1]):.1f} deg)")
+    print(f"  v_x(5) = { -g * theta0_ * 5:.2f} m/s")
+    return
+
+
+@app.cell
+def _():
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
     # 🧩 Controller Tuned with Pole Assignment
 
     Using pole assignement, find a matrix
@@ -1707,6 +1801,115 @@ def _(mo):
 
     Explain how you find the proper design parameters!
     """)
+    return
+
+
+@app.cell
+def _():
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### 🔓 Solution
+
+    **Controller Tuned with Pole Assignment**
+
+    We consider the reduced lateral system:
+
+    $$
+    \dot{s} = A s + B u, \quad
+    s = \begin{bmatrix} \Delta x \\ \Delta v_x \\ \Delta \theta \\ \Delta \omega \end{bmatrix}, \quad
+    u = \Delta\phi,
+    $$
+
+    with
+
+    $$
+    A = \begin{bmatrix}
+    0 & 1 & 0 & 0 \\
+    0 & 0 & -g & 0 \\
+    0 & 0 & 0 & 1 \\
+    0 & 0 & 0 & 0
+    \end{bmatrix}, \qquad
+    B = \begin{bmatrix}
+    0 \\ -g \\ 0 \\ -\dfrac{Mg\ell}{2J}
+    \end{bmatrix}.
+    $$
+
+    We seek a state feedback control law:
+
+    $$
+    \Delta\phi(t) = -K_{pp} \cdot s(t), \quad K_{pp} \in \mathbb{R}^{1 \times 4}
+    $$
+
+    such that the closed-loop dynamics $\dot{s} = (A - B K_{pp}) s$ is **asymptotically stable** and $\Delta x(t) \to 0$ in approximately 20 seconds (or less).
+
+    ---
+
+    ### 1. Design strategy
+
+    The system is controllable, so we can place the closed-loop poles arbitrarily.
+
+    **Choice of pole locations:**
+
+    - To achieve a settling time $t_s \approx 20$ s, we target a dominant time constant $\tau \approx t_s/4 = 5$ s.
+    - Hence the dominant poles should have real part $\approx -1/\tau = -0.2$ rad/s.
+    - We choose two complex conjugate dominant poles for oscillatory but well-damped response:
+      $p_{1,2} = -0.2 \pm 0.2i$ (damping $\zeta \approx 0.7$, natural frequency $\omega_n \approx 0.28$ rad/s).
+    - The remaining poles (faster dynamics) are placed farther left:
+      $p_{3} = -1$, $p_{4} = -1.5$.
+
+    **Desired characteristic polynomial:**
+
+    $$
+    (s + 0.2 - 0.2i)(s + 0.2 + 0.2i)(s + 1)(s + 1.5)
+    = (s^2 + 0.4s + 0.08)(s^2 + 2.5s + 1.5)
+    $$
+
+    Expanding:
+
+    $$
+    s^4 + (0.4+2.5)s^3 + (0.08 + 1.0 + 2.5\cdot0.4)s^2 + (0.4\cdot1.5 + 2.5\cdot0.08)s + 0.08\cdot1.5
+    $$
+
+    Let's compute precisely:
+
+    - Coefficient $s^3$: $0.4 + 2.5 = 2.9$
+    - Coefficient $s^2$: $0.08 + 1.5 + (2.5 \times 0.4) = 0.08 + 1.5 + 1.0 = 2.58$
+    - Coefficient $s^1$: $(0.4 \times 1.5) + (2.5 \times 0.08) = 0.6 + 0.2 = 0.8$
+    - Constant: $0.08 \times 1.5 = 0.12$
+
+    So:
+
+    $$
+    P_{\text{des}}(s) = s^4 + 2.9 s^3 + 2.58 s^2 + 0.8 s + 0.12
+    $$
+    """)
+    return
+
+
+@app.cell
+def _(g, gamma, np):
+    import control as ct
+    A1 = np.array([
+        [0, 1, 0, 0],
+        [0, 0, -g, 0],
+        [0, 0, 0, 1],
+        [0, 0, 0, 0]
+    ])
+
+    B1 = np.array([[0], [-g], [0], [-gamma]])
+
+    # Desired poles
+    poles = [-0.2 + 0.2j, -0.2 - 0.2j, -1.0, -1.5]
+
+    # Compute K using pole placement
+    K = ct.place(A1, B1, poles)
+
+    print("K_pp =", K[0])
+    print(f"K_pp = [{K[0,0]:.3f}, {K[0,1]:.3f}, {K[0,2]:.3f}, {K[0,3]:.3f}]")
     return
 
 
