@@ -1368,17 +1368,7 @@ def _(mo):
     chacun représentant un **intégrateur double** (double pôle en $\lambda = 0$). Toutes les valeurs propres de $A$ sont donc $\lambda = 0$ avec multiplicité algébrique 6.
 
     **Conclusion.**
-    L'équilibre n'est **pas asymptotiquement stable** — il n'est même pas stable au sens de Lyapunov.
-
-    **Interprétation physique.**
-
-    | Sous-système | Comportement libre sous perturbation initiale |
-    |---|---|
-    | $(\Delta x, \Delta v_x)$ | dérive linéaire en $x$ si $\Delta v_x(0) \neq 0$ |
-    | $(\Delta y, \Delta v_y)$ | dérive linéaire en $y$ si $\Delta v_y(0) \neq 0$ |
-    | $(\Delta\theta, \Delta\omega)$ | rotation uniforme si $\Delta\omega(0) \neq 0$, puis $\Delta x$ dérive via le couplage $-g\,\Delta\theta$ |
-
-    Physiquement, un booster en lévitation sans contrôle actif ne reste pas à l'équilibre : toute petite perturbation en vitesse angulaire produit une inclinaison croissante, qui elle-même génère une accélération horizontale non compensée. Le **contrôle actif est donc indispensable** pour stabiliser le système.
+    L'équilibre n'est **pas asymptotiquement stable**.
     """)
     return
 
