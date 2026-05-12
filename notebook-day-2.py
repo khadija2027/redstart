@@ -1105,7 +1105,13 @@ def _(mo):
 def _(mo):
     mo.md(r"""
     ### 🔓 Solution
+    """)
+    return
 
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
     For equilibrium, all derivatives must be zero.
     Starting with the velocity components:
     $v_x = 0$, $v_y = 0$, $\omega = 0$
@@ -1137,6 +1143,74 @@ def _(mo):
 
     Introduce the error variables $\Delta x$, $\Delta y$, $\Delta \theta$, and $\Delta f$ and $\Delta \phi$ of the state and input values with respect to the generic equilibrium configuration.
     What are the linear ordinary differential equations that govern(approximately) these variables in a neighbourhood of the equilibrium?
+    """)
+    return
+
+
+@app.cell
+def _():
+    ### 🔓 Solution
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(r"""
+    We write each state and input as its equilibrium value plus a small perturbation:
+
+    $$
+    x = x^* + \Delta x, \quad
+    y = y^* + \Delta y, \quad
+    \theta = 0 + \Delta\theta, \quad
+    f = Mg + \Delta f, \quad
+    \phi = 0 + \Delta\phi.
+    $$
+
+    We substitute into the equations of motion and expand to first order,
+    dropping all products of small quantities.
+
+    **Horizontal axis.**
+    The exact equation is $\ddot{x} = -\tfrac{f}{M}\sin(\theta+\phi)$.
+    We linearize $\sin(\theta + \phi) \approx \Delta\theta + \Delta\phi$
+    and replace $f$ by its equilibrium value $Mg$:
+    $$
+    \Delta\ddot{x} = -g\,(\Delta\theta + \Delta\phi).
+    $$
+
+    **Vertical axis.**
+    The exact equation is $\ddot{y} = \tfrac{f}{M}\cos(\theta+\phi) - g$.
+    We linearize $\cos(\theta+\phi) \approx 1$ and write $f = Mg + \Delta f$:
+    $$
+    \Delta\ddot{y} = \frac{\Delta f}{M}.
+    $$
+
+    **Rotation.**
+    The exact equation is $\ddot{\theta} = -\tfrac{f}{J}\tfrac{\ell}{2}\sin\phi$.
+    We linearize $\sin\phi \approx \Delta\phi$ and replace $f$ by $Mg$:
+    $$
+    \Delta\ddot{\theta} = -\frac{Mg\ell}{2J}\,\Delta\phi.
+    $$
+
+    Introducing $\Delta v_x = \Delta\dot{x}$, $\Delta v_y = \Delta\dot{y}$,
+    $\Delta\omega = \Delta\dot{\theta}$, the six linearized first-order equations are:
+
+    $$
+    \begin{aligned}
+    \Delta\dot{x}      &= \Delta v_x, \\
+    \Delta\dot{v}_x    &= -g\,\Delta\theta - g\,\Delta\phi, \\
+    \Delta\dot{y}      &= \Delta v_y, \\
+    \Delta\dot{v}_y    &= \frac{1}{M}\,\Delta f, \\
+    \Delta\dot{\theta} &= \Delta\omega, \\
+    \Delta\dot{\omega} &= -\frac{Mg\ell}{2J}\,\Delta\phi.
+    \end{aligned}
+    $$
+
+    **Decoupling structure.**
+    The linearized dynamics split into two independent subsystems:
+
+    - **Vertical** $(\Delta y,\, \Delta v_y)$: driven exclusively by $\Delta f$.
+    - **Horizontal + attitude** $(\Delta x,\, \Delta v_x,\, \Delta\theta,\, \Delta\omega)$:
+      driven exclusively by $\Delta\phi$.
     """)
     return
 
