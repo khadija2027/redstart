@@ -1204,13 +1204,6 @@ def _(mo):
     \Delta\dot{\omega} &= -\frac{Mg\ell}{2J}\,\Delta\phi.
     \end{aligned}
     $$
-
-    **Decoupling structure.**
-    The linearized dynamics split into two independent subsystems:
-
-    - **Vertical** $(\Delta y,\, \Delta v_y)$: driven exclusively by $\Delta f$.
-    - **Horizontal + attitude** $(\Delta x,\, \Delta v_x,\, \Delta\theta,\, \Delta\omega)$:
-      driven exclusively by $\Delta\phi$.
     """)
     return
 
