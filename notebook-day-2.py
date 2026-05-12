@@ -1136,6 +1136,61 @@ def _(mo):
     return
 
 
+@app.cell
+def _(mo):
+    mo.md(r"""
+    phi_eq = 0
+    theta_eq = 0
+    f_eq = M * g
+    mo.md(rf"\"\"
+    ### 🔓 Solution
+
+    At an equilibrium we need $\dot{{s}} = 0$, i.e. all six components of $F(s, f, \phi)$ vanish.
+
+    The velocity components give immediately:
+    $$
+    \dot{{x}} = v_x = 0, \quad \dot{{y}} = v_y = 0, \quad \dot{{\theta}} = \omega = 0.
+    $$
+
+    The second-order conditions (zero acceleration) give:
+    $$
+    \begin{{aligned}}
+    \ddot{{x}}      &= -\frac{{f}}{{M}}\sin(\theta+\phi) = 0, \\
+    \ddot{{y}}      &= \frac{{f}}{{M}}\cos(\theta+\phi) - g = 0, \\
+    \ddot{{\theta}} &= -\frac{{f}}{{J}}\frac{{\ell}}{{2}}\sin\phi = 0.
+    \end{{aligned}}
+    $$
+
+    **Step 1 — solve $\ddot{{\theta}} = 0$.**
+    Since $f > 0$ and $\ell, J > 0$, we need $\sin\phi = 0$.
+    With $|\phi| < \pi/2$ the only solution is $\phi^* = {phi_eq}$.
+
+    **Step 2 — solve $\ddot{{x}} = 0$.**
+    Substituting $\phi = 0$ gives $-\tfrac{{f}}{{M}}\sin\theta = 0$.
+    Since $f > 0$, we need $\sin\theta = 0$, and with $|\theta| < \pi/2$: $\theta^* = {theta_eq}$.
+
+    **Step 3 — solve $\ddot{{y}} = 0$.**
+    With $\theta = \phi = 0$ this reduces to $\tfrac{{f}}{{M}} - g = 0$, hence $f^* = Mg = {f_eq}$.
+
+    **Step 4 — position variables $x$ and $y$.**
+    The coordinates $(x, y)$ do not appear anywhere in $F(s, f, \phi)$ — the forces and
+    torques depend only on velocities, angles, and inputs, not on absolute position.
+    Therefore $x$ and $y$ are **completely free**: any position is an equilibrium.
+
+    **Conclusion.**
+    There exists a whole family of equilibria parametrised by $(x, y) \in \mathbb{{R}}^2$:
+    $$
+    s^* = (x,\ 0,\ y,\ 0,\ 0,\ 0), \qquad f^* = Mg, \qquad \phi^* = 0.
+    $$
+    The booster must be perfectly **vertical** ($\theta = 0$), **at rest**
+    ($\dot{{x}} = \dot{{y}} = \dot{{\theta}} = 0$), nozzle **aligned with its axis** ($\phi = 0$),
+    and thrust **exactly balancing gravity** ($f = Mg$) —
+    but it may hover at **any horizontal position and any height**.
+    "\"\")
+    """)
+    return
+
+
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
