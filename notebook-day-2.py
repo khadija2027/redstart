@@ -4,11 +4,12 @@ __generated_with = "0.20.4"
 app = marimo.App()
 
 
-@app.cell
-def _():
-    import marimo as mo
-
-    return (mo,)
+app._unparsable_cell(
+    r"""
+    liimport marimo as mo
+    """,
+    name="_"
+)
 
 
 @app.cell(hide_code=True)
@@ -1277,44 +1278,43 @@ def _(mo):
     We choose the state vector and inputs as:
 
     $$
-    s = \begin{bmatrix} \Delta x \ \Delta\dot{x} \ \Delta y \ \Delta\dot{y} \ \Delta\theta \ \Delta\dot{\theta} \end{bmatrix} \in \mathbb{R}^6, \qquad u = \begin{bmatrix} \Delta f \ \Delta\phi \end{bmatrix} \in \mathbb{R}^2
+    s = \begin{bmatrix} \Delta x \\ \Delta\dot{x} \\ \Delta y \\ \Delta\dot{y} \\ \Delta\theta \\ \Delta\dot{\theta} \end{bmatrix} \in \mathbb{R}^6, \qquad u = \begin{bmatrix} \Delta f \\ \Delta\phi \end{bmatrix} \in \mathbb{R}^2
     $$
 
     The linearized system writes $\dot{s} = As + Bu$ with:
 
     $$
     A = \begin{bmatrix}
-    0 & 1 & 0 & 0 & 0 & 0 \
-    0 & 0 & 0 & 0 & -g & 0 \
-    0 & 0 & 0 & 1 & 0 & 0 \
-    0 & 0 & 0 & 0 & 0 & 0 \
-    0 & 0 & 0 & 0 & 0 & 1 \
+    0 & 1 & 0 & 0 & 0 & 0 \\
+    0 & 0 & 0 & 0 & -g & 0 \\
+    0 & 0 & 0 & 1 & 0 & 0 \\
+    0 & 0 & 0 & 0 & 0 & 0 \\
+    0 & 0 & 0 & 0 & 0 & 1 \\
     0 & 0 & 0 & 0 & 0 & 0
     \end{bmatrix}, \qquad
     B = \begin{bmatrix}
-    0 & 0 \
-    0 & -g \
-    0 & 0 \
-    \frac{1}{M} & 0 \
-    0 & 0 \
+    0 & 0 \\
+    0 & -g \\
+    0 & 0 \\
+    \frac{1}{M} & 0 \\
+    0 & 0 \\
     0 & -\frac{6g}{\ell}
     \end{bmatrix}
     $$
 
-    The matrix $A$ encodes the free dynamics: the only coupling is $\Delta\ddot{x} = -g,\Delta\theta$
+    The matrix $A$ encodes the free dynamics: the only coupling is $\Delta\ddot{x} = -g\,\Delta\theta$
     (a tilt induces a lateral acceleration).
 
     The matrix $B$ encodes the effect of the inputs:
-    
-$\Delta f$ acts only on $\Delta\ddot{y}$ (vertical dynamics),
-$\Delta\phi$ acts on $\Delta\ddot{x}$ and $\Delta\ddot{\theta}$ (lateral dynamics).
+    - $\Delta f$ acts only on $\Delta\ddot{y}$ (vertical dynamics),
+    - $\Delta\phi$ acts on $\Delta\ddot{x}$ and $\Delta\ddot{\theta}$ (lateral dynamics).
 
     The system is therefore naturally decoupled into two independent subsystems:
 
     | Subsystem | Variables | Input |
     |:---:|:---:|:---:|
-    | Lateral | $\Delta x,, \Delta\dot{x},, \Delta\theta,, \Delta\dot{\theta}$ | $\Delta\phi$ |
-    | Vertical | $\Delta y,, \Delta\dot{y}$ | $\Delta f$ |
+    | Lateral | $\Delta x,\, \Delta\dot{x},\, \Delta\theta,\, \Delta\dot{\theta}$ | $\Delta\phi$ |
+    | Vertical | $\Delta y,\, \Delta\dot{y}$ | $\Delta f$ |
     """)
     return
 
