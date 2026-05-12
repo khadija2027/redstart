@@ -1410,6 +1410,71 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
+    ### 🔓 Solution
+
+    The linear system $\dot{s} = As + Bu$, with $s \in \mathbb{R}^4$ and $u \in \mathbb{R}^1$ (for the reduced lateral dynamics), is **completely controllable** if and only if the controllability matrix
+
+    $$
+    \mathcal{C} = \begin{bmatrix} B & AB & A^2B & A^3B \end{bmatrix} \in \mathbb{R}^{4 \times 4}
+    $$
+
+    has full rank (rank 4).
+
+    **Verification by direct computation.**
+    With the reduced lateral matrices:
+
+    $$
+    A = \begin{bmatrix}
+    0 & 1 & 0 & 0 \\
+    0 & 0 & -g & 0 \\
+    0 & 0 & 0 & 1 \\
+    0 & 0 & 0 & 0
+    \end{bmatrix}, \qquad
+    B = \begin{bmatrix}
+    0 \\ -g \\ 0 \\ -\dfrac{Mg\ell}{2J}
+    \end{bmatrix}
+    $$
+
+    The controllability matrix is:
+
+    $$
+    \mathcal{C} = \begin{bmatrix}
+    0 & -g & 0 & g\gamma \\
+    -g & 0 & g\gamma & 0 \\
+    0 & -\gamma & 0 & 0 \\
+    -\gamma & 0 & 0 & 0
+    \end{bmatrix}, \qquad \gamma = \frac{Mg\ell}{2J}
+    $$
+
+    Its determinant is $\det(\mathcal{C}) = g^2 \gamma^4 \neq 0$, which implies full rank.
+
+    The reduced lateral system is **completely controllable**. The input $\Delta\phi$ acts directly on $\Delta\dot{v}_x$ and $\Delta\dot{\omega}$, and through successive integrations reaches $\Delta\omega$, $\Delta\theta$, $\Delta v_x$, and $\Delta x$.
+    """)
+    return
+
+
+@app.cell
+def _(A, B, J, M, g, l, np):
+    gamma = M * g * l / (2 * J)
+
+    A_ = np.array([[0, 1, 0, 0],
+                  [0, 0, -g, 0],
+                  [0, 0, 0, 1],
+                  [0, 0, 0, 0]])
+
+    B_ = np.array([[0], [-g], [0], [-gamma]])
+
+    C_ = np.hstack([B, A @ B, A @ A @ B, A @ A @ A @ B])
+    rank_ = np.linalg.matrix_rank(C_)
+
+    print(f"Controllability matrix rank: {rank_}/4")
+    print("System is controllable." if rank_ == 4 else "System is not controllable.")
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
     # 🧩 Linear Model in Free Fall
 
     Make graphs of $x(t)$ and $\theta(t)$ for the linearized model when
@@ -1418,6 +1483,98 @@ def _(mo):
 
     What do you see? How do you explain it?
     """)
+    return
+
+
+@app.cell
+def _():
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### 🔓 Solution
+
+    **Linear Model in Free Fall**
+
+    We consider the linearized lateral dynamics with no control input ($\Delta\phi = 0$), and initial conditions:
+
+    $$
+    \Delta x(0) = 0,\quad \Delta v_x(0) = 0,\quad \Delta\theta(0) = \frac{\pi}{4},\quad \Delta\omega(0) = 0.
+    $$
+
+    The reduced system is:
+
+    $$
+    \begin{aligned}
+    \Delta\dot{x} &= \Delta v_x, \\
+    \Delta\dot{v}_x &= -g\,\Delta\theta, \\
+    \Delta\dot{\theta} &= \Delta\omega, \\
+    \Delta\dot{\omega} &= 0.
+    \end{aligned}
+    $$
+
+    **Analytical solution.**
+
+    From $\Delta\dot{\omega} = 0$ and $\Delta\omega(0)=0$, we get $\Delta\omega(t) = 0$.
+    Hence $\Delta\dot{\theta} = 0$, and with $\Delta\theta(0) = \pi/4$, we have $\Delta\theta(t) = \pi/4$ (constant).
+
+    Then $\Delta\dot{v}_x = -g \cdot (\pi/4)$, which is constant. Integrating:
+
+    $$
+    \Delta v_x(t) = \Delta v_x(0) - \frac{g\pi}{4}\,t = -\frac{g\pi}{4}\,t.
+    $$
+
+    Integrating again:
+
+    $$
+    \Delta x(t) = \Delta x(0) + \int_0^t \Delta v_x(\tau)\,d\tau = -\frac{g\pi}{8}\,t^2.
+    $$
+
+    **Interpretation.**
+
+    - $\theta$ remains constant at $\pi/4$ because there is no torque ($\Delta\phi = 0$ and no damping).
+    - The constant tilt produces a constant horizontal acceleration $a_x = -g\tan(\theta) \approx -g\theta$ (small angle approximation).
+    - The drone accelerates horizontally like a free-falling object under a constant sideways force.
+    - Position $x(t)$ follows a **parabolic trajectory** in time: $x(t) \propto -t^2$.
+
+    **What do we see?**
+    The drone drifts indefinitely in the negative $x$ direction with ever-increasing speed. The tilt never returns to zero. This is **unstable behavior** in the sense that the drone will continue accelerating sideways without bound.
+    """)
+    return
+
+
+@app.cell
+def _(g, np, plt):
+    theta0 = np.pi / 4  # 45 degrees
+    t = np.linspace(0, 5, 500)
+
+    # Analytical solution
+    theta = theta0 * np.ones_like(t)
+    vx = -g * theta0 * t
+    x = -0.5 * g * theta0 * t**2
+
+    fig, axes = plt.subplots(2, 1, figsize=(8, 6))
+
+    axes[0].plot(t, x, 'b-', linewidth=2)
+    axes[0].set_ylabel(r'$x(t)$ [m]')
+    axes[0].set_title('Horizontal position')
+    axes[0].grid(True)
+
+    axes[1].plot(t, theta, 'r-', linewidth=2)
+    axes[1].set_ylabel(r'$\theta(t)$ [rad]')
+    axes[1].set_xlabel('Time [s]')
+    axes[1].set_title('Tilt angle')
+    axes[1].grid(True)
+
+    plt.tight_layout()
+    plt.show()
+
+    print(f"After 5 seconds:")
+    print(f"  x = {x[-1]:.2f} m")
+    print(f"  vx = {vx[-1]:.2f} m/s")
+    print(f"  theta = {theta[-1]:.2f} rad ({np.degrees(theta[-1]):.1f} deg)")
     return
 
 
