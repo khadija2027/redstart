@@ -1368,7 +1368,17 @@ def _(mo):
     chacun représentant un **intégrateur double** (double pôle en $\lambda = 0$). Toutes les valeurs propres de $A$ sont donc $\lambda = 0$ avec multiplicité algébrique 6.
 
     **Conclusion.**
-    L'équilibre n'est **pas asymptotiquement stable**.
+    L'équilibre n'est **pas asymptotiquement stable** — il n'est même pas stable au sens de Lyapunov.
+
+    **Interprétation physique.**
+
+    | Sous-système | Comportement libre sous perturbation initiale |
+    |---|---|
+    | $(\Delta x, \Delta v_x)$ | dérive linéaire en $x$ si $\Delta v_x(0) \neq 0$ |
+    | $(\Delta y, \Delta v_y)$ | dérive linéaire en $y$ si $\Delta v_y(0) \neq 0$ |
+    | $(\Delta\theta, \Delta\omega)$ | rotation uniforme si $\Delta\omega(0) \neq 0$, puis $\Delta x$ dérive via le couplage $-g\,\Delta\theta$ |
+
+    Physiquement, un booster en lévitation sans contrôle actif ne reste pas à l'équilibre : toute petite perturbation en vitesse angulaire produit une inclinaison croissante, qui elle-même génère une accélération horizontale non compensée. Le **contrôle actif est donc indispensable** pour stabiliser le système.
     """)
     return
 
@@ -1595,6 +1605,7 @@ def _(g, np, plt):
     vx = -g * theta0 * t
     x = -0.5 * g * theta0 * t**2
 
+
     fig, axes = plt.subplots(2, 1, figsize=(8, 6))
 
     axes[0].plot(t, x, 'b-', linewidth=2)
@@ -1615,7 +1626,7 @@ def _(g, np, plt):
     print(f"  x = {x[-1]:.2f} m")
     print(f"  vx = {vx[-1]:.2f} m/s")
     print(f"  theta = {theta[-1]:.2f} rad ({np.degrees(theta[-1]):.1f} deg)")
-    return t, x
+    return t, theta0
 
 
 @app.cell(hide_code=True)
@@ -1661,99 +1672,129 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ### 🔓 Solution
+ 
+    """)
+    return
 
-    **Linear Model in Free Fall (No Control, $\phi(t)=0$)**
 
-    We consider the linearized lateral dynamics with zero input ($\Delta\phi = 0$) and initial conditions:
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### 🔓 Solution: Manually Tuned Controller
 
-    $$
-    x(0) = 0,\quad \dot{x}(0) = 0,\quad \theta(0) = \frac{\pi}{4},\quad \dot{\theta}(0) = 0.
-    $$
+    **Goal:** Find $K = \begin{bmatrix} 0 & 0 & k_3 & k_4 \end{bmatrix}$ such that with control law $\Delta\phi(t) = -K \cdot s(t)$:
 
-    The linearized equations reduce to:
+    - $\Delta\theta(t) \to 0$ in $\approx 20$ s (or less)
+    - $|\Delta\theta(t)| < \pi/2$ and $|\Delta\phi(t)| < \pi/2$ at all times
+    - No requirement on $\Delta x$ drift
+
+    **System Dynamics (Reduced Lateral):**
 
     $$
     \begin{aligned}
-    \Delta\dot{x} &= \Delta v_x, \\
-    \Delta\dot{v}_x &= -g\,\Delta\theta, \\
-    \Delta\dot{\theta} &= \Delta\omega, \\
-    \Delta\dot{\omega} &= 0.
+    \Delta\dot{x} &= \Delta v_x \\
+    \Delta\dot{v}_x &= -g\Delta\theta - g\Delta\phi \\
+    \Delta\dot{\theta} &= \Delta\omega \\
+    \Delta\dot{\omega} &= -\gamma \Delta\phi, \quad \gamma = \frac{Mg\ell}{2J}
     \end{aligned}
     $$
 
-    **Analytical solution.**
-
-    Since $\Delta\dot{\omega} = 0$ and $\Delta\omega(0) = 0$, we have $\Delta\omega(t) = 0$.
-    Therefore $\Delta\dot{\theta} = 0$, so $\Delta\theta(t) = \Delta\theta(0) = \pi/4$ (constant tilt).
-
-    The horizontal acceleration is constant: $\Delta\dot{v}_x = -g \cdot (\pi/4)$.
-    Integrating with zero initial velocity:
+    With $u = \Delta\phi = -k_3\Delta\theta - k_4\Delta\omega$, the closed-loop angular dynamics become:
 
     $$
-    \Delta v_x(t) = -\frac{g\pi}{4}\,t.
+    \begin{aligned}
+    \Delta\dot{\theta} &= \Delta\omega \\
+    \Delta\dot{\omega} &= -\gamma(-k_3\Delta\theta - k_4\Delta\omega) = \gamma k_3 \Delta\theta + \gamma k_4 \Delta\omega
+    \end{aligned}
     $$
 
-    Integrating again with zero initial position:
+    This is a second-order system:
 
     $$
-    \Delta x(t) = -\frac{g\pi}{8}\,t^2.
+    \ddot{\theta} - \gamma k_4 \dot{\theta} - \gamma k_3 \theta = 0
     $$
 
-    **Graphs and interpretation.**
+    ---
 
-    The graphs show:
-    - **Tilt angle $\theta(t)$** remains constant at $\pi/4$ (45°) for all time.
-    - **Horizontal position $x(t)$** follows a downward parabola, accelerating indefinitely in the negative direction.
+    ### 1. Design Strategy
 
-    **What do we see?**
-    The drone drifts sideways with ever-increasing speed. The tilt never returns to zero. This behavior is **unstable** — a small initial tilt causes unbounded horizontal drift without any restoring torque.
+    For stability and desired response, we want the characteristic polynomial:
 
-    **Why does this happen?**
-    - With $\phi = 0$, the propeller thrust is aligned with the body ($\theta$).
-    - The thrust vector has a constant horizontal component $Mg\sin\theta \approx Mg\,\theta$ (small angle).
-    - No torque acts on the drone because $\phi = 0$ and $f = Mg$, so $\ddot{\theta} = 0$.
-    - The initial tilt persists forever, producing constant horizontal acceleration.
-    - The linear model neglects the reduction of vertical lift ($Mg\cos\theta$), so the drone never falls; it just slides sideways indefinitely.
+    $$
+    s^2 - \gamma k_4 s - \gamma k_3 = s^2 + 2\zeta\omega_n s + \omega_n^2
+    $$
+
+    Matching coefficients:
+
+    $$
+    - \gamma k_4 = 2\zeta\omega_n \quad \Rightarrow \quad k_4 = -\frac{2\zeta\omega_n}{\gamma}
+    $$
+    $$
+    - \gamma k_3 = \omega_n^2 \quad \Rightarrow \quad k_3 = -\frac{\omega_n^2}{\gamma}
+    $$
+
+    **For ~20s settling time:** $t_s \approx \frac{4}{\zeta\omega_n} \approx 20$ s $\Rightarrow \zeta\omega_n \approx 0.2$
+
+    Choose $\zeta = 0.7$ (good damping), then $\omega_n = 0.2/0.7 \approx 0.286$ rad/s.
+
+    Then:
+
+    $$
+    k_3 = -\frac{(0.286)^2}{\gamma}, \quad k_4 = -\frac{2 \times 0.7 \times 0.286}{\gamma}
+    $$
+
+    With physical parameters ($g=9.81$, $M=1$, $\ell=1$, $J=1/12$):
+
+    $\gamma = \frac{1 \times 9.81 \times 1}{2 \times (1/12)} = \frac{9.81}{1/6} = 58.86$
+
+    **Analytical guess:**
+
+    $$
+    k_3 \approx -0.00139, \quad k_4 \approx -0.00680
+    $$
     """)
     return
 
 
 @app.cell
-def _(g, np, plt, t, x):
-    theta0_ = np.pi / 4   # 45 degrees
+def _(g, gamma, plt, t, theta0):
 
-    t_ = np.linspace(0, 5, 500)
+    from scipy.integrate import odeint
 
-    # Analytical solution
-    theta_ = theta0_ * np.ones_like(t)
-    x_ = -0.5 * g * theta0_ * t**2
+    # System derivatives
+    def lateral_system(state, t, k3, k4):
+        x, vx, theta, omega = state
+        dphi = - (k3 * theta + k4 * omega)
+        dx = vx
+        dvx = -g * theta - g * dphi
+        dtheta = omega
+        domega = -gamma * dphi
+        return [dx, dvx, dtheta, domega]
 
-    fig_, axes_ = plt.subplots(2, 1, figsize=(8, 6))
+    # Iteration 1: Analytical guess (too small)
+    k3 = -0.0014
+    k4 = -0.0068
+    state0 = [0, 0, theta0, 0]
+    sol = odeint(lateral_system, state0, t, args=(k3, k4))
 
-    axes_[0].plot(t_, x_, 'b-', linewidth=2)
-    axes_[0].set_ylabel(r'$x(t)$ [m]')
-    axes_[0].set_title('Horizontal position (free fall, no control)')
-    axes_[0].grid(True)
+    fig2, axes2 = plt.subplots(2, 2, figsize=(10, 6))
+    axes2[0, 0].plot(t, sol[:, 2], 'r-')
+    axes2[0, 0].set_ylabel(r'$\theta$ [rad]')
+    axes2[0, 0].set_title('Iteration 1: θ(t)')
+    axes2[0, 0].grid(True)
 
-    axes_[1].plot(t_, theta_, 'r-', linewidth=2)
-    axes_[1].set_ylabel(r'$\theta(t)$ [rad]')
-    axes_[1].set_xlabel('Time [s]')
-    axes_[1].set_title('Tilt angle (remains constant)')
-    axes_[1].grid(True)
-
+    # Compute control input
+    dphi = -(k3 * sol[:, 2] + k4 * sol[:, 3])
+    axes2[1, 0].plot(t, dphi, 'b-')
+    axes2[1, 0].set_ylabel(r'$\Delta\phi$ [rad]')
+    axes2[1, 0].set_xlabel('Time [s]')
+    axes2[1, 0].set_title('Control input')
+    axes2[1, 0].grid(True)
     plt.tight_layout()
     plt.show()
 
-    print(f"After 5 seconds:")
-    print(f"  x(5) = {x[-1]:.2f} m")
-    print(f"  θ(5) = {theta_[-1]:.2f} rad ({np.degrees(theta_[-1]):.1f} deg)")
-    print(f"  v_x(5) = { -g * theta0_ * 5:.2f} m/s")
-    return
+    print(f"Iter 1: k3={k3:.4f}, k4={k4:.4f}, settling time >30s?")
 
-
-@app.cell
-def _():
     return
 
 
