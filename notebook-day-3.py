@@ -2408,70 +2408,6 @@ def _(mo):
 
 @app.cell
 def _(mo):
-    mo.md("""
-    ### 🔓 Solution
-    """)
-    return
-
-
-@app.cell
-def _(mo):
-    mo.md(r"""
-    Rappelons l'expression correcte de $h^{(4)}$ obtenue précédemment :
-
-    $$
-    h^{(4)} = \frac{1}{M} R(\theta) \begin{bmatrix} v_1 - z\dot{\theta}^2 \\ 2\dot{z}\dot{\theta} - z v_2 \end{bmatrix}
-    $$
-
-    où $R(\theta) = \begin{bmatrix} \sin\theta & \cos\theta \\ -\cos\theta & \sin\theta \end{bmatrix}$.
-
-    **Objectif :** Trouver $v = (v_1, v_2)$ en fonction de $u$ et de l'état courant tel que $h^{(4)} = u$.
-
-    Puisque $R(\theta)$ est une matrice de rotation, elle est inversible et son inverse est sa transposée :
-    $$R(\theta)^{-1} = R(\theta)^\top = \begin{bmatrix} \sin\theta & -\cos\theta \\ \cos\theta & \sin\theta \end{bmatrix}$$
-
-    Multiplions les deux côtés de l'équation $h^{(4)} = u$ par $M R(\theta)^\top$ :
-
-    $$
-    M R(\theta)^\top h^{(4)} = M R(\theta)^\top u
-    $$
-
-    Mais d'après l'expression de $h^{(4)}$, nous avons :
-    $$M R(\theta)^\top h^{(4)} = \begin{bmatrix} v_1 - z\dot{\theta}^2 \\ 2\dot{z}\dot{\theta} - z v_2 \end{bmatrix}$$
-
-    Ainsi, pour obtenir $h^{(4)} = u$, nous devons avoir :
-    $$
-    \begin{bmatrix} v_1 - z\dot{\theta}^2 \\ 2\dot{z}\dot{\theta} - z v_2 \end{bmatrix} = M R(\theta)^\top u
-    $$
-
-    Notons $\begin{bmatrix} w_1 \\ w_2 \end{bmatrix} = M R(\theta)^\top u$, c'est-à-dire :
-    $$w_1 = M (\sin\theta \, u_1 - \cos\theta \, u_2)$$
-    $$w_2 = M (\cos\theta \, u_1 + \sin\theta \, u_2)$$
-
-    Nous obtenons alors le système d'équations suivant :
-    $$\begin{cases}
-    v_1 - z\dot{\theta}^2 = w_1 \\
-    2\dot{z}\dot{\theta} - z v_2 = w_2
-    \end{cases}$$
-
-    Que nous résolvons pour $v_1$ et $v_2$ :
-
-    $$
-    \boxed{v_1 = z\dot{\theta}^2 + w_1}
-    $$
-    $$
-    \boxed{v_2 = \frac{2\dot{z}\dot{\theta} - w_2}{z}}
-    $$
-
-    **Remarque :** Cette expression suppose $z \neq 0$, ce qui est physiquement justifié car $z$ est lié à la force normale et ne s'annule pas pendant le vol (sauf peut-être à l'impact).
-
-    **Conclusion :** En choisissant $v$ selon les équations ci-dessus, on obtient exactement $h^{(4)} = u$.
-    """)
-    return
-
-
-@app.cell
-def _(mo):
     mo.md(r"""
     ### 🔓 Solution
 
@@ -2479,92 +2415,44 @@ def _(mo):
 
     $$
     h^{(4)} = \frac{1}{M}
-    \begin{bmatrix}\cos\theta & -\sin\theta \\ \sin\theta & \cos\theta\end{bmatrix}
+    \begin{bmatrix}\sin\theta & \cos\theta \\ -\cos\theta & \sin\theta\end{bmatrix}
     \begin{bmatrix}
         v_1 - z\dot{\theta}^2 \\
-        2\dot{z}\dot{\theta} + z\ddot{\theta}
+        2\dot{z}\dot{\theta} + v_2
     \end{bmatrix}
-    $$
-
-    **Expressing $z\ddot{\theta}$ in terms of $v_2$.**
-
-    The booster tilt equation is $J\ddot{\theta} = -(f\,\ell/2)\sin\phi$.
-    The auxiliary system output gives $f_y = z - M\ell\dot\theta^2/6$ (the normal component)
-    and the tangential component involves $v_2$. Working through the auxiliary system
-    definition, one obtains:
-
-    $$
-    z\,\ddot{\theta}
-    = \frac{M^2\ell^2}{36\,J}\,v_2.
-    $$
-
-    Substituting $J = M\ell^2/12$:
-
-    $$
-    \frac{M^2\ell^2}{36\,J}
-    = \frac{M^2\ell^2}{36 \cdot \dfrac{M\ell^2}{12}}
-    = \frac{12\,M^2\ell^2}{36\,M\ell^2}
-    = \frac{M}{3}.
-    $$
-
-    Therefore $z\ddot{\theta} = \dfrac{M}{3}\,v_2$, and:
-
-    $$
-    h^{(4)} = \frac{1}{M}
-    \underbrace{\begin{bmatrix}\cos\theta & -\sin\theta \\ \sin\theta & \cos\theta\end{bmatrix}}_{R(\theta)}
-    \begin{bmatrix}
-        v_1 - z\dot{\theta}^2 \\
-        2\dot{z}\dot{\theta} + \dfrac{M}{3}\,v_2
-    \end{bmatrix}.
     $$
 
     **Choosing $v$ to achieve $h^{(4)} = u$.**
 
-    Since $R(\theta)$ is invertible with $R(\theta)^{-1} = R(-\theta) = R(\theta)^\top$,
-    we set:
-
-    $$
-    \frac{1}{M} R(\theta)
-    \begin{bmatrix}
-        v_1 - z\dot{\theta}^2 \\
-        2\dot{z}\dot{\theta} + \dfrac{M}{3}\,v_2
-    \end{bmatrix}
-    = u
-    $$
-
-    i.e.
+    Since the matrix $\begin{bmatrix}\sin\theta & \cos\theta \\ -\cos\theta & \sin\theta\end{bmatrix}$ is a rotation matrix, it is invertible with transpose as its inverse. Setting $h^{(4)} = u$:
 
     $$
     \begin{bmatrix}
         v_1 - z\dot{\theta}^2 \\
-        2\dot{z}\dot{\theta} + \dfrac{M}{3}\,v_2
+        2\dot{z}\dot{\theta} + v_2
     \end{bmatrix}
-    = M\,R(\theta)^\top u.
+    = M\begin{bmatrix}\sin\theta & -\cos\theta \\ \cos\theta & \sin\theta\end{bmatrix} u
     $$
 
-    Denoting $\begin{bmatrix}w_1 \\ w_2\end{bmatrix} = M\,R(\theta)^\top u$, the second
-    auxiliary system is:
+    Denoting $\begin{bmatrix}w_1 \\ w_2\end{bmatrix} = M\begin{bmatrix}\sin\theta & -\cos\theta \\ \cos\theta & \sin\theta\end{bmatrix} u$, the second auxiliary system is:
 
     $$
     \boxed{
     v_1 = z\dot{\theta}^2 + w_1,
     \qquad
-    v_2 = \frac{3}{M}\!\left(w_2 - 2\dot{z}\dot{\theta}\right),
+    v_2 = w_2 - 2\dot{z}\dot{\theta},
     \qquad
-    \begin{bmatrix}w_1\\w_2\end{bmatrix} = M R(\theta)^\top u.
+    \begin{bmatrix}w_1\\w_2\end{bmatrix} = M \begin{bmatrix}\sin\theta & -\cos\theta \\ \cos\theta & \sin\theta\end{bmatrix} u.
     }
     $$
 
-    With this choice, $h^{(4)} = u$ exactly. The overall system — booster + first
-    auxiliary system + second auxiliary system — is therefore equivalent to **two
-    independent chains of four integrators**:
+    With this choice, $h^{(4)} = u$ exactly. The overall system is therefore equivalent to **two independent chains of four integrators**:
 
     $$
     h_x^{(4)} = u_1, \qquad h_y^{(4)} = u_2,
     $$
 
-    which is a fully linearized and decoupled system. Any linear control technique
-    (pole placement, LQR, …) can now be applied to $(h_x, h_y)$ independently.
+    which is a fully linearized and decoupled system.
     """)
     return
 
@@ -2580,26 +2468,27 @@ def _(mo):
 
 
 @app.cell
-def _(l, np):
-    def Tr(x, dx, y, dy, theta, dtheta, z, dz):
-        # h
-        h_x = x - (l/6) * np.sin(theta)
-        h_y = y + (l/6) * np.cos(theta)
+def _(M, g, l, np):
+    def Tr(x, dx, y, dy, theta, dtheta, z, dz):
+        M_val = 1.0  # or use M from context
 
-        # dh/dt
-        dh_x = dx - (l/6) * np.cos(theta) * dtheta
-        dh_y = dy - (l/6) * np.sin(theta) * dtheta
+        # h
+        h_x = x - (l/6) * np.sin(theta)
+        h_y = y + (l/6) * np.cos(theta)
 
-        # d2h/dt2 = v = (z, dz) by construction of the auxiliary system
-        d2h_x = z
-        d2h_y = dz
+        # dh/dt
+        dh_x = dx - (l/6) * dtheta * np.cos(theta)
+        dh_y = dy - (l/6) * dtheta * np.sin(theta)
 
-        # d3h/dt3 = dv/dt = (dz, ddz)
-        # dz is available; ddz = v1 (the new input) — not yet known here,
-        # so d3h is expressed purely from the current state:
-        d3h_x = dz
-        d3h_y = -( (l/6) * np.sin(theta) * dtheta**3
-                  + (l/6) * np.cos(theta) * dtheta * z )
+        # d2h/dt2
+        # From: d2h = (z/M) * [sin(theta), -cos(theta)]^T - [0, g]^T
+        d2h_x = (z / M) * np.sin(theta)
+        d2h_y = -(z / M) * np.cos(theta) - g
+
+        # d3h/dt3
+        # From: h^(3) = (1/M) * R(theta) * [dz, z*dtheta]^T
+        d3h_x = (1/M) * (np.sin(theta) * dz + np.cos(theta) * z * dtheta)
+        d3h_y = (1/M) * (-np.cos(theta) * dz + np.sin(theta) * z * dtheta)
 
         return h_x, h_y, dh_x, dh_y, d2h_x, d2h_y, d3h_x, d3h_y
 
