@@ -2267,6 +2267,69 @@ def _(mo):
     return
 
 
+@app.cell
+def _(mo):
+    mo.md(r"""
+    The output $h$ is the position of a specific point on the booster body, located
+    at a distance $\ell/6$ from the center of mass, in the direction opposite to the nozzle
+
+    The unit vector pointing from the nozzle towards the top of the booster is:
+    $$
+    \begin{bmatrix} -\sin\theta \\ +\cos\theta \end{bmatrix}
+    $$
+    so the point at distance $\ell/6$ from the center of mass in that direction has coordinates:
+    $$
+    h = \begin{bmatrix} x \\ y \end{bmatrix} + \frac{\ell}{6}
+    \begin{bmatrix} -\sin\theta \\ +\cos\theta \end{bmatrix}
+    =
+    \begin{bmatrix} x - (\ell/6)\sin\theta \\ y + (\ell/6)\cos\theta \end{bmatrix}.
+    $$
+
+    Since the booster has total length $\ell$, its center of mass is at $\ell/2$ from each end.
+    The point $h$ is therefore located at:
+    $$
+    \frac{\ell}{2} - \frac{\ell}{6} = \frac{\ell}{3}
+    $$
+    """)
+    return
+
+
+@app.cell
+def _(M, booster, g, l, mo, np, svg, transform, world):
+    _theta = np.pi / 7
+    _x, _y = 0.0, 2.5
+
+    _hx = _x - (l/6) * np.sin(_theta)
+    _hy = _y + (l/6) * np.cos(_theta)
+
+    _drawing = world(
+        [-3, 3, -1, 5],
+        booster(_x, _y, _theta, M * g, 0),
+        # center of mass dot
+        transform.translate(_x, _y)(
+            svg.circle(r=0.08, fill="blue")
+        ),
+        # h point dot
+        transform.translate(_hx, _hy)(
+            svg.circle(r=0.08, fill="red")
+        ),
+        # CoM label
+        transform.translate(_x + 0.12, _y)(
+            transform.scale(1, -1)(
+                svg.text(fill="blue", style="font-size:0.18px")("Center of Mass (x, y)")
+            )
+        ),
+        # h label
+        transform.translate(_hx + 0.12, _hy)(
+            transform.scale(1, -1)(
+                svg.text(fill="red", style="font-size:0.18px")("h  (upper third point)")
+            )
+        ),
+    )
+    mo.Html(_drawing).center()
+    return
+
+
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
