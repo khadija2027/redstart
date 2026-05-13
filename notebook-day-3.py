@@ -2750,7 +2750,7 @@ def _(M, T_inv, Tr, g, l, np):
 
         return fun
 
-    return
+    return (compute,)
 
 
 @app.cell(hide_code=True)
@@ -2766,6 +2766,125 @@ def _(mo):
 
     Make the graph of the relevant variables as a function of time, then make an animation out of the same result. Comment and iterate if necessary!
     """)
+    return
+
+
+@app.cell
+def _(M, compute, g, l, mo, np, plt):
+    def graphical_validation():
+        # Initial and final conditions
+        x_0, dx_0      = 5.0,  0.0
+        y_0, dy_0      = 20.0, -1.0
+        theta_0        = -np.pi/8
+        dtheta_0       = 0.0
+        z_0, dz_0      = -M*g, 0.0
+
+        x_tf, dx_tf    = 0.0,  0.0
+        y_tf, dy_tf    = 2/3*l, 0.0
+        theta_tf       = 0.0
+        dtheta_tf      = 0.0
+        z_tf, dz_tf    = -M*g, 0.0
+
+        tf = 10.0
+
+        fun = compute(
+            x_0, dx_0, y_0, dy_0, theta_0, dtheta_0, z_0, dz_0,
+            x_tf, dx_tf, y_tf, dy_tf, theta_tf, dtheta_tf, z_tf, dz_tf,
+            tf,
+        )
+
+        t = np.linspace(0, tf, 1000)
+        sol = fun(t)
+
+        x, dx, y, dy, theta, dtheta, z, dz, f, phi = sol
+
+        fig, axes = plt.subplots(5, 2, figsize=(12, 14), sharex=True)
+        fig.suptitle("Admissible Path — Graphical Validation", fontsize=14)
+
+        axes[0,0].plot(t, x);         axes[0,0].set_ylabel(r"$x$");         axes[0,0].grid(True)
+        axes[0,1].plot(t, dx);        axes[0,1].set_ylabel(r"$\dot{x}$");   axes[0,1].grid(True)
+        axes[1,0].plot(t, y);         axes[1,0].set_ylabel(r"$y$");         axes[1,0].grid(True)
+        axes[1,1].plot(t, dy);        axes[1,1].set_ylabel(r"$\dot{y}$");   axes[1,1].grid(True)
+        axes[2,0].plot(t, theta);     axes[2,0].set_ylabel(r"$\theta$");    axes[2,0].grid(True)
+        axes[2,0].plot(t,  np.pi/2 * np.ones_like(t), "r--")
+        axes[2,0].plot(t, -np.pi/2 * np.ones_like(t), "r--")
+        axes[2,1].plot(t, dtheta);    axes[2,1].set_ylabel(r"$\dot\theta$");axes[2,1].grid(True)
+        axes[3,0].plot(t, z);         axes[3,0].set_ylabel(r"$z$");         axes[3,0].grid(True)
+        axes[3,1].plot(t, dz);        axes[3,1].set_ylabel(r"$\dot{z}$");   axes[3,1].grid(True)
+        axes[4,0].plot(t, f);         axes[4,0].set_ylabel(r"$f$");         axes[4,0].grid(True)
+        axes[4,0].plot(t, np.zeros_like(t), "r--", label=r"$f=0$")
+        axes[4,1].plot(t, phi);       axes[4,1].set_ylabel(r"$\phi$");      axes[4,1].grid(True)
+        axes[4,1].plot(t,  np.pi/2 * np.ones_like(t), "r--")
+        axes[4,1].plot(t, -np.pi/2 * np.ones_like(t), "r--")
+
+        for ax in axes[-1]:
+            ax.set_xlabel(r"time $t$")
+
+        # Check boundary conditions
+        print("=== Initial conditions ===")
+        print(f"x(0)      = {x[0]:.4f}  (expected {x_0})")
+        print(f"dx(0)     = {dx[0]:.4f}  (expected {dx_0})")
+        print(f"y(0)      = {y[0]:.4f}  (expected {y_0})")
+        print(f"dy(0)     = {dy[0]:.4f}  (expected {dy_0})")
+        print(f"theta(0)  = {theta[0]:.4f}  (expected {theta_0:.4f})")
+        print(f"dtheta(0) = {dtheta[0]:.4f}  (expected {dtheta_0})")
+        print(f"z(0)      = {z[0]:.4f}  (expected {z_0})")
+        print(f"dz(0)     = {dz[0]:.4f}  (expected {dz_0})")
+
+        print("\n=== Final conditions ===")
+        print(f"x(tf)      = {x[-1]:.4f}  (expected {x_tf})")
+        print(f"dx(tf)     = {dx[-1]:.4f}  (expected {dx_tf})")
+        print(f"y(tf)      = {y[-1]:.4f}  (expected {y_tf})")
+        print(f"dy(tf)     = {dy[-1]:.4f}  (expected {dy_tf})")
+        print(f"theta(tf)  = {theta[-1]:.4f}  (expected {theta_tf})")
+        print(f"dtheta(tf) = {dtheta[-1]:.4f}  (expected {dtheta_tf})")
+        print(f"z(tf)      = {z[-1]:.4f}  (expected {z_tf})")
+        print(f"dz(tf)     = {dz[-1]:.4f}  (expected {dz_tf})")
+
+        plt.tight_layout()
+        return mo.center(fig)
+
+    graphical_validation()
+    return
+
+
+@app.cell
+def _(M, booster_anim, compute, g, l, mo, np, world):
+    def animation_validation():
+        x_0, dx_0      = 5.0,  0.0
+        y_0, dy_0      = 20.0, -1.0
+        theta_0        = -np.pi/8
+        dtheta_0       = 0.0
+        z_0, dz_0      = -M*g, 0.0
+
+        x_tf, dx_tf    = 0.0,  0.0
+        y_tf, dy_tf    = 2/3*l, 0.0
+        theta_tf       = 0.0
+        dtheta_tf      = 0.0
+        z_tf, dz_tf    = -M*g, 0.0
+
+        tf = 10.0
+
+        fun = compute(
+            x_0, dx_0, y_0, dy_0, theta_0, dtheta_0, z_0, dz_0,
+            x_tf, dx_tf, y_tf, dy_tf, theta_tf, dtheta_tf, z_tf, dz_tf,
+            tf,
+        )
+
+        def x(t):     return fun(t)[0]
+        def y(t):     return fun(t)[2]
+        def theta(t): return fun(t)[4]
+        def f(t):     return fun(t)[8]
+        def phi(t):   return fun(t)[9]
+
+        return mo.Html(
+            world(
+                [-6, 6, -2, 22],
+                booster_anim(x, y, theta, f, phi, T=tf)
+            )
+        ).center()
+
+    animation_validation()
     return
 
 
