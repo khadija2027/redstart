@@ -2492,7 +2492,7 @@ def _(M, g, l, np):
 
         return h_x, h_y, dh_x, dh_y, d2h_x, d2h_y, d3h_x, d3h_y
 
-    return
+    return (Tr,)
 
 
 @app.cell(hide_code=True)
@@ -2514,136 +2514,76 @@ def _(mo):
     ### 🔓 Solution
 
     We have four vector quantities available:
-    $h, \dot{h} \in \mathbb{R}^2$ (2 equations each)
-    and $\ddot{h}, h^{(3)} \in \mathbb{R}^2$ (2 equations each),
+    $h, \dot{h}, \ddot{h}, h^{(3)} \in \mathbb{R}^2$,
     giving 8 scalar equations to recover 8 unknowns
     $(x, \dot{x}, y, \dot{y}, \theta, \dot{\theta}, z, \dot{z})$.
 
     **Step 1 — recover $z$ and $\theta$ from $\ddot{h}$.**
 
-    From the second-order derivative formula:
+    From:
+    $$\ddot{h} = \frac{z}{M}\begin{bmatrix}\sin\theta \\ -\cos\theta\end{bmatrix} - \begin{bmatrix}0 \\ g\end{bmatrix}$$
 
-    $$
-    \ddot{h} = \frac{z}{M}\begin{bmatrix}\cos\theta \\ \sin\theta\end{bmatrix}
-    $$
+    we isolate the gravity term:
+    $$\frac{z}{M}\begin{bmatrix}\sin\theta \\ -\cos\theta\end{bmatrix} = \ddot{h} + \begin{bmatrix}0 \\ g\end{bmatrix}$$
 
     Taking the Euclidean norm and using $z < 0$:
+    $$\frac{|z|}{M} = \left\|\ddot{h} + \begin{bmatrix}0 \\ g\end{bmatrix}\right\| \quad\Longrightarrow\quad \boxed{z = -M\left\|\ddot{h} + \begin{bmatrix}0 \\ g\end{bmatrix}\right\|}$$
 
-    $$
-    \|\ddot{h}\| = \frac{|z|}{M} = \frac{-z}{M}
-    \quad\Longrightarrow\quad
-    \boxed{z = -M\|\ddot{h}\|}
-    $$
-
-    Since $z/M < 0$, the unit vector $(\cos\theta, \sin\theta)$ points in the direction
-    opposite to $\ddot{h}$:
-
-    $$
-    \begin{bmatrix}\cos\theta \\ \sin\theta\end{bmatrix}
-    = \frac{M}{z}\,\ddot{h} = -\frac{\ddot{h}}{\|\ddot{h}\|}
-    \quad\Longrightarrow\quad
-    \boxed{\theta = \operatorname{atan2}\!\left(-\ddot{h}_x,\; \ddot{h}_y\right)}
-    $$
-
-    (using the convention $\theta = \operatorname{atan2}(\sin\theta, \cos\theta)$,
-    i.e. $\operatorname{atan2}$ of the $y$-component first).
+    The angle $\theta$ follows from the direction of the vector:
+    $$\boxed{\theta = \operatorname{atan2}\!\left(\ddot{h}_x,\; -(\ddot{h}_y + g)\right)}$$
 
     **Step 2 — recover $\dot{z}$ and $\dot{\theta}$ from $h^{(3)}$.**
 
-    From the third-order derivative formula:
+    From:
+    $$h^{(3)} = \frac{1}{M}\begin{bmatrix}\sin\theta & \cos\theta \\ -\cos\theta & \sin\theta\end{bmatrix}\begin{bmatrix}\dot{z} \\ z\dot{\theta}\end{bmatrix}$$
 
-    $$
-    h^{(3)} = \frac{1}{M}R(\theta)
-    \begin{bmatrix}\dot{z} \\ z\dot{\theta}\end{bmatrix}
-    $$
-
-    Inverting $R(\theta)$ (which is orthogonal, so $R(\theta)^{-1} = R(\theta)^\top$):
-
-    $$
-    \begin{bmatrix}\dot{z} \\ z\dot{\theta}\end{bmatrix}
-    = M\,R(\theta)^\top h^{(3)}
-    = M\begin{bmatrix}
-        \cos\theta & \sin\theta \\
-        -\sin\theta & \cos\theta
-    \end{bmatrix}
-    \begin{bmatrix}h^{(3)}_x \\ h^{(3)}_y\end{bmatrix}
-    $$
+    Inverting the rotation matrix:
+    $$\begin{bmatrix}\dot{z} \\ z\dot{\theta}\end{bmatrix} = M\begin{bmatrix}\sin\theta & -\cos\theta \\ \cos\theta & \sin\theta\end{bmatrix}\begin{bmatrix}h^{(3)}_x \\ h^{(3)}_y\end{bmatrix}$$
 
     Therefore:
-
-    $$
-    \boxed{\dot{z} = M\!\left(\cos\theta\;h^{(3)}_x + \sin\theta\;h^{(3)}_y\right)}
-    $$
-
-    $$
-    \boxed{\dot{\theta} = \frac{M}{z}\!\left(-\sin\theta\;h^{(3)}_x + \cos\theta\;h^{(3)}_y\right)}
-    $$
+    $$\boxed{\dot{z} = M\!\left(\sin\theta\; h^{(3)}_x - \cos\theta\; h^{(3)}_y\right)}$$
+    $$\boxed{\dot{\theta} = \frac{M}{z}\!\left(\cos\theta\; h^{(3)}_x + \sin\theta\; h^{(3)}_y\right)}$$
 
     **Step 3 — recover $(x, y)$ from $h$.**
 
-    From the definition $h = \begin{bmatrix}x - \frac{\ell}{6}\sin\theta \\
-    y + \frac{\ell}{6}\cos\theta\end{bmatrix}$:
-
-    $$
-    \boxed{x = h_x + \frac{\ell}{6}\sin\theta, \qquad y = h_y - \frac{\ell}{6}\cos\theta}
-    $$
+    $$\boxed{x = h_x + \frac{\ell}{6}\sin\theta, \qquad y = h_y - \frac{\ell}{6}\cos\theta}$$
 
     **Step 4 — recover $(\dot{x}, \dot{y})$ from $\dot{h}$.**
 
-    From $\dot{h} = \begin{bmatrix}\dot{x} - \frac{\ell}{6}\dot{\theta}\cos\theta \\
-    \dot{y} - \frac{\ell}{6}\dot{\theta}\sin\theta\end{bmatrix}$:
-
-    $$
-    \boxed{\dot{x} = \dot{h}_x + \frac{\ell}{6}\dot{\theta}\cos\theta,
-    \qquad
-    \dot{y} = \dot{h}_y + \frac{\ell}{6}\dot{\theta}\sin\theta}
-    $$
-
-    All 8 unknowns are uniquely determined (the only potential singularity is
-    $\|\ddot{h}\| = 0$, i.e. $z = 0$, which is excluded by assumption).
+    $$\boxed{\dot{x} = \dot{h}_x + \frac{\ell}{6}\dot{\theta}\cos\theta, \qquad \dot{y} = \dot{h}_y + \frac{\ell}{6}\dot{\theta}\sin\theta}$$
     """)
     return
 
 
 @app.cell
-def _(M, l, np):
-    def T_inv(h_x, h_y, dh_x, dh_y, d2h_x, d2h_y, d3h_x, d3h_y):
+def _(M, g, l, np):
+    def T_inv(h_x, h_y, dh_x, dh_y, d2h_x, d2h_y, d3h_x, d3h_y):
 
-        # Step 1: z and theta from d2h
+        # Step 1: z and theta from d2h
+        vec_x = d2h_x
+        vec_y = d2h_y + g
 
-        norm_d2h = np.sqrt(d2h_x**2 + d2h_y**2)
+        norm = np.sqrt(vec_x**2 + vec_y**2)
+        z = -M * norm
+        theta = np.arctan2(vec_x, -vec_y)
 
-        z = -M * norm_d2h
+        # Step 2: dz and dtheta from d3h
+        cos_t, sin_t = np.cos(theta), np.sin(theta)
 
-        theta = np.arctan2(-d2h_x, d2h_y)
+        dz     = M * ( sin_t * d3h_x - cos_t * d3h_y)
+        dtheta = (M / z) * ( cos_t * d3h_x + sin_t * d3h_y)
 
+        # Step 3: x, y from h
+        x = h_x + (l/6) * sin_t
+        y = h_y - (l/6) * cos_t
 
-        # Step 2: dz and dtheta from d3h
-
-        cos_t, sin_t = np.cos(theta), np.sin(theta)
-
-        dz     = M * ( cos_t * d3h_x + sin_t * d3h_y)
-
-        dtheta = (M / z) * (-sin_t * d3h_x + cos_t * d3h_y)
-
-
-        # Step 3: x, y from h
-
-        x = h_x + (l / 6) * sin_t
-
-        y = h_y - (l / 6) * cos_t
-
-
-        # Step 4: dx, dy from dh
-
-        dx = dh_x + (l / 6) * dtheta * cos_t
-
-        dy = dh_y + (l / 6) * dtheta * sin_t
-
+        # Step 4: dx, dy from dh
+        dx = dh_x + (l/6) * dtheta * cos_t
+        dy = dh_y + (l/6) * dtheta * sin_t
 
         return x, dx, y, dy, theta, dtheta, z, dz
 
-    return
+    return (T_inv,)
 
 
 @app.cell(hide_code=True)
@@ -2679,6 +2619,137 @@ def _(mo):
 
     that returns a function `fun` such that `fun(t)` is a value of `x, dx, y, dy, theta, dtheta, z, dz, f, phi` at time `t` that match the initial and final values provided as arguments to `compute`.
     """)
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(r"""
+    ### 🔓 Solution
+
+    We need to find a path that matches the initial and final conditions on
+    $(x, \dot{x}, y, \dot{y}, \theta, \dot{\theta}, z, \dot{z})$.
+
+    The key idea is to work in the $h$-coordinates. Using `Tr`, we convert the
+    initial and final booster states into initial and final conditions on
+    $h, \dot{h}, \ddot{h}, h^{(3)}$. Then, since $h^{(4)} = u$, each component
+    of $h$ satisfies a **chain of 4 integrators**: we just need to find a
+    polynomial of degree 7 (with 8 coefficients) matching the 4 boundary
+    conditions at $t=0$ and $t=t_f$ for each component independently.
+    Finally, we convert back to booster coordinates using `T_inv`.
+    """)
+    return
+
+
+@app.cell
+def _(M, T_inv, Tr, g, l, np):
+    def compute(
+        x_0, dx_0, y_0, dy_0, theta_0, dtheta_0, z_0, dz_0,
+        x_tf, dx_tf, y_tf, dy_tf, theta_tf, dtheta_tf, z_tf, dz_tf,
+        tf,
+    ):
+        # --- Convert initial and final states to h-coordinates ---
+        h_x0, h_y0, dh_x0, dh_y0, d2h_x0, d2h_y0, d3h_x0, d3h_y0 = Tr(
+            x_0, dx_0, y_0, dy_0, theta_0, dtheta_0, z_0, dz_0
+        )
+        h_xf, h_yf, dh_xf, dh_yf, d2h_xf, d2h_yf, d3h_xf, d3h_yf = Tr(
+            x_tf, dx_tf, y_tf, dy_tf, theta_tf, dtheta_tf, z_tf, dz_tf
+        )
+
+        # --- Fit a degree-7 polynomial for each component of h ---
+        # p(t) = a0 + a1*t + a2*t^2 + ... + a7*t^7
+        # 8 conditions: p(0), p'(0), p''(0), p'''(0),
+        #               p(tf), p'(tf), p''(tf), p'''(tf)
+
+        def poly_coeffs(h0, dh0, d2h0, d3h0, hf, dhf, d2hf, d3hf, tf):
+            # Build the 8x8 linear system
+            T  = tf
+            T2 = T**2;  T3 = T**3;  T4 = T**4
+            T5 = T**5;  T6 = T**6;  T7 = T**7
+
+            A = np.array([
+                # p(0)
+                [1, 0,  0,   0,    0,    0,    0,    0   ],
+                # p'(0)
+                [0, 1,  0,   0,    0,    0,    0,    0   ],
+                # p''(0)
+                [0, 0,  2,   0,    0,    0,    0,    0   ],
+                # p'''(0)
+                [0, 0,  0,   6,    0,    0,    0,    0   ],
+                # p(tf)
+                [1, T,  T2,  T3,   T4,   T5,   T6,   T7  ],
+                # p'(tf)
+                [0, 1,  2*T, 3*T2, 4*T3, 5*T4, 6*T5, 7*T6],
+                # p''(tf)
+                [0, 0,  2,   6*T,  12*T2,20*T3,30*T4,42*T5],
+                # p'''(tf)
+                [0, 0,  0,   6,    24*T, 60*T2,120*T3,210*T4],
+            ])
+            b = np.array([h0, dh0, d2h0, d3h0, hf, dhf, d2hf, d3hf])
+            return np.linalg.solve(A, b)
+
+        cx = poly_coeffs(h_x0, dh_x0, d2h_x0, d3h_x0,
+                         h_xf, dh_xf, d2h_xf, d3h_xf, tf)
+        cy = poly_coeffs(h_y0, dh_y0, d2h_y0, d3h_y0,
+                         h_yf, dh_yf, d2h_yf, d3h_yf, tf)
+
+        # --- Evaluate polynomial and its derivatives ---
+        def eval_poly(c, t):
+            # value
+            p   = sum(c[k] * t**k for k in range(8))
+            # 1st derivative
+            dp  = sum(k * c[k] * t**(k-1) for k in range(1, 8))
+            # 2nd derivative
+            d2p = sum(k*(k-1) * c[k] * t**(k-2) for k in range(2, 8))
+            # 3rd derivative
+            d3p = sum(k*(k-1)*(k-2) * c[k] * t**(k-3) for k in range(3, 8))
+            return p, dp, d2p, d3p
+
+        # --- Build the output function ---
+        def fun(t):
+            t = np.asarray(t, dtype=float)
+            scalar = t.ndim == 0
+            t = np.atleast_1d(t)
+
+            results = []
+            for ti in t:
+                hx,  dhx,  d2hx,  d3hx  = eval_poly(cx, ti)
+                hy,  dhy,  d2hy,  d3hy  = eval_poly(cy, ti)
+
+                x, dx, y, dy, theta, dtheta, z, dz = T_inv(
+                    hx, hy, dhx, dhy, d2hx, d2hy, d3hx, d3hy
+                )
+
+                # Recover f and phi from z, theta, dtheta
+                # f_x = -f*sin(theta+phi), f_y = f*cos(theta+phi)
+                # From auxiliary system: f = sqrt(fx^2 + fy^2)
+                # Here we use: z relates to the normal force
+                f   = np.sqrt(
+                    (z - M*l*dtheta**2/6)**2 +
+                    0.0  # phi=0 on the reference path approximation
+                )
+                # More precisely, recover f and phi from (fx, fy):
+                # fx = -f*sin(theta+phi), fy = f*cos(theta+phi) - M*g... 
+                # use the booster equations directly:
+                # M*d2x = fx, M*(d2y+g) = fy
+                d2hx_val, d2hy_val = d2hx, d2hy
+                # accelerations of CoM
+                # d2x_com and d2y_com come from h:
+                # d2h = (z/M)*[sin theta, -cos theta] - [0,g]
+                fx =  z * np.sin(theta)
+                fy = -z * np.cos(theta) - M*g + M*g   # simplifies
+                fy = -z * np.cos(theta)
+
+                f_norm = np.sqrt(fx**2 + fy**2)
+                phi = np.arctan2(-fx, fy) - theta
+
+                results.append([x, dx, y, dy, theta, dtheta, z, dz, f_norm, phi])
+
+            out = np.array(results).T
+            return out[:, 0] if scalar else out
+
+        return fun
+
     return
 
 
