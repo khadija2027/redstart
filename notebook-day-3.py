@@ -2513,6 +2513,33 @@ def _(mo):
     return
 
 
+@app.cell
+def _(l, np):
+    def Tr(x, dx, y, dy, theta, dtheta, z, dz):
+        # h
+        h_x = x - (l/6) * np.sin(theta)
+        h_y = y + (l/6) * np.cos(theta)
+
+        # dh/dt
+        dh_x = dx - (l/6) * np.cos(theta) * dtheta
+        dh_y = dy - (l/6) * np.sin(theta) * dtheta
+
+        # d2h/dt2 = v = (z, dz) by construction of the auxiliary system
+        d2h_x = z
+        d2h_y = dz
+
+        # d3h/dt3 = dv/dt = (dz, ddz)
+        # dz is available; ddz = v1 (the new input) — not yet known here,
+        # so d3h is expressed purely from the current state:
+        d3h_x = dz
+        d3h_y = -( (l/6) * np.sin(theta) * dtheta**3
+                  + (l/6) * np.cos(theta) * dtheta * z )
+
+        return h_x, h_y, dh_x, dh_y, d2h_x, d2h_y, d3h_x, d3h_y
+
+    return
+
+
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
@@ -2523,11 +2550,6 @@ def _(mo):
 
     Implement the corresponding function `T_inv`.
     """)
-    return
-
-
-@app.cell
-def _():
     return
 
 
@@ -2625,6 +2647,47 @@ def _(mo):
     All 8 unknowns are uniquely determined (the only potential singularity is
     $\|\ddot{h}\| = 0$, i.e. $z = 0$, which is excluded by assumption).
     """)
+    return
+
+
+@app.cell
+def _(M, l, np):
+    def T_inv(h_x, h_y, dh_x, dh_y, d2h_x, d2h_y, d3h_x, d3h_y):
+
+        # Step 1: z and theta from d2h
+
+        norm_d2h = np.sqrt(d2h_x**2 + d2h_y**2)
+
+        z = -M * norm_d2h
+
+        theta = np.arctan2(-d2h_x, d2h_y)
+
+
+        # Step 2: dz and dtheta from d3h
+
+        cos_t, sin_t = np.cos(theta), np.sin(theta)
+
+        dz     = M * ( cos_t * d3h_x + sin_t * d3h_y)
+
+        dtheta = (M / z) * (-sin_t * d3h_x + cos_t * d3h_y)
+
+
+        # Step 3: x, y from h
+
+        x = h_x + (l / 6) * sin_t
+
+        y = h_y - (l / 6) * cos_t
+
+
+        # Step 4: dx, dy from dh
+
+        dx = dh_x + (l / 6) * dtheta * cos_t
+
+        dy = dh_y + (l / 6) * dtheta * sin_t
+
+
+        return x, dx, y, dy, theta, dtheta, z, dz
+
     return
 
 
