@@ -2210,7 +2210,7 @@ def _(mo):
     Let
     $$
     R(\alpha) =
-    \begin{bmatrix} +\cos \alpha & -\sin \alpha \\ +\sin \alpha & -\cos \alpha
+    \begin{bmatrix} +\cos \alpha & -\sin \alpha \\ +\sin \alpha & +\cos \alpha
     \end{bmatrix}
     $$
 
@@ -2348,14 +2348,16 @@ def _(mo):
     **First derivative:**
 
     $$
-    \dot{h} = \begin{bmatrix} \dot{x} - \frac{\ell}{6}\dot{\theta}\cos\theta \\ \dot{y} - \frac{\ell}{6}\dot{\theta}\sin\theta \end{bmatrix}
+    \dot{h} = \begin{bmatrix} \dot{x} + \frac{\ell}{6}\dot{\theta}\cos\theta \\ \dot{y} - \frac{\ell}{6}\dot{\theta}\sin\theta \end{bmatrix}
     $$
 
-    **Second derivative.** Differentiating $\dot{h}$ and substituting $M\ddot{x} = f_x$, $M\ddot{y} = f_y - Mg$ and $\ddot{\theta} = -v_2$ from the auxiliary system, the $v_2$ and $\dot{\theta}^2$ terms cancel and one obtains:
+    **Second derivative.** Using $R(\theta - \pi/2) = \begin{bmatrix}\sin\theta & \cos\theta \\ -\cos\theta & \sin\theta\end{bmatrix}$, the auxiliary system gives:
 
-    $$
-    \ddot{h} = \frac{z}{M}\begin{bmatrix} \sin\theta \\ -\cos\theta \end{bmatrix} - \begin{bmatrix} 0 \\ g \end{bmatrix}
-    $$
+    $$f_x = \sin\theta\!\left(z - \tfrac{M\ell\dot\theta^2}{6}\right) + \tfrac{M\ell v_2}{6}\cos\theta, \qquad f_y = -\cos\theta\!\left(z - \tfrac{M\ell\dot\theta^2}{6}\right) + \tfrac{M\ell v_2}{6}\sin\theta$$
+
+    and the torque equation gives $\ddot\theta = -v_2$. Substituting $M\ddot{x} = f_x$, $M\ddot{y} = f_y - Mg$, the $v_2$ and $\dot\theta^2$ terms cancel exactly and:
+
+    $$\ddot{h} = \frac{z}{M}\begin{bmatrix}\sin\theta \\ -\cos\theta\end{bmatrix} - \begin{bmatrix}0 \\ g\end{bmatrix}$$
     """)
     return
 
@@ -2375,17 +2377,17 @@ def _(mo):
     mo.md(r"""
     ### 🔓 Solution
 
-    **Third derivative.** Differentiating $\ddot{h}$ with respect to time:
+    **Third derivative.** Differentiating $\ddot{h}$:
 
-    $$
-    h^{(3)} = \frac{1}{M}\begin{bmatrix} \dot{z}\sin\theta + z\dot{\theta}\cos\theta \\ -\dot{z}\cos\theta + z\dot{\theta}\sin\theta \end{bmatrix} = \frac{1}{M}\begin{bmatrix}\sin\theta & \cos\theta \\ -\cos\theta & \sin\theta\end{bmatrix}\begin{bmatrix}\dot{z} \\ z\dot{\theta}\end{bmatrix}
-    $$
+    $$h^{(3)} = \frac{1}{M}\begin{bmatrix}\sin\theta & \cos\theta \\ -\cos\theta & \sin\theta\end{bmatrix}\begin{bmatrix}\dot{z} \\ z\dot{\theta}\end{bmatrix}$$
 
-    **Fourth derivative.** Differentiating $h^{(3)}$ and using $\ddot{z} = v_1$ and $\ddot{\theta} = -v_2$:
+    **Fourth derivative.** Differentiating $h^{(3)}$ and using $\ddot{z} = v_1$, $\ddot\theta = v_2/z$:
 
-    $$
-    h^{(4)} = \frac{1}{M}\begin{bmatrix}\sin\theta & \cos\theta \\ -\cos\theta & \sin\theta\end{bmatrix}\begin{bmatrix} v_1 - z\dot{\theta}^2 \\ 2\dot{z}\dot{\theta} - zv_2 \end{bmatrix}
-    $$
+    Since $\frac{d}{dt}\begin{bmatrix}\dot{z} \\ z\dot{\theta}\end{bmatrix} = \begin{bmatrix}v_1 \\ \dot{z}\dot{\theta} + z\ddot{\theta}\end{bmatrix} = \begin{bmatrix}v_1 \\ \dot{z}\dot{\theta} + v_2\end{bmatrix}$,
+
+    we obtain:
+
+    $$h^{(4)} = \frac{1}{M}\begin{bmatrix}\sin\theta & \cos\theta \\ -\cos\theta & \sin\theta\end{bmatrix}\begin{bmatrix}v_1 - z\dot\theta^2 \\ 2\dot{z}\dot\theta + v_2\end{bmatrix}$$
     """)
     return
 
@@ -2400,6 +2402,70 @@ def _(mo):
     $$
     h^{(4)} = u
     $$
+    """)
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md("""
+    ### 🔓 Solution
+    """)
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(r"""
+    Rappelons l'expression correcte de $h^{(4)}$ obtenue précédemment :
+
+    $$
+    h^{(4)} = \frac{1}{M} R(\theta) \begin{bmatrix} v_1 - z\dot{\theta}^2 \\ 2\dot{z}\dot{\theta} - z v_2 \end{bmatrix}
+    $$
+
+    où $R(\theta) = \begin{bmatrix} \sin\theta & \cos\theta \\ -\cos\theta & \sin\theta \end{bmatrix}$.
+
+    **Objectif :** Trouver $v = (v_1, v_2)$ en fonction de $u$ et de l'état courant tel que $h^{(4)} = u$.
+
+    Puisque $R(\theta)$ est une matrice de rotation, elle est inversible et son inverse est sa transposée :
+    $$R(\theta)^{-1} = R(\theta)^\top = \begin{bmatrix} \sin\theta & -\cos\theta \\ \cos\theta & \sin\theta \end{bmatrix}$$
+
+    Multiplions les deux côtés de l'équation $h^{(4)} = u$ par $M R(\theta)^\top$ :
+
+    $$
+    M R(\theta)^\top h^{(4)} = M R(\theta)^\top u
+    $$
+
+    Mais d'après l'expression de $h^{(4)}$, nous avons :
+    $$M R(\theta)^\top h^{(4)} = \begin{bmatrix} v_1 - z\dot{\theta}^2 \\ 2\dot{z}\dot{\theta} - z v_2 \end{bmatrix}$$
+
+    Ainsi, pour obtenir $h^{(4)} = u$, nous devons avoir :
+    $$
+    \begin{bmatrix} v_1 - z\dot{\theta}^2 \\ 2\dot{z}\dot{\theta} - z v_2 \end{bmatrix} = M R(\theta)^\top u
+    $$
+
+    Notons $\begin{bmatrix} w_1 \\ w_2 \end{bmatrix} = M R(\theta)^\top u$, c'est-à-dire :
+    $$w_1 = M (\sin\theta \, u_1 - \cos\theta \, u_2)$$
+    $$w_2 = M (\cos\theta \, u_1 + \sin\theta \, u_2)$$
+
+    Nous obtenons alors le système d'équations suivant :
+    $$\begin{cases}
+    v_1 - z\dot{\theta}^2 = w_1 \\
+    2\dot{z}\dot{\theta} - z v_2 = w_2
+    \end{cases}$$
+
+    Que nous résolvons pour $v_1$ et $v_2$ :
+
+    $$
+    \boxed{v_1 = z\dot{\theta}^2 + w_1}
+    $$
+    $$
+    \boxed{v_2 = \frac{2\dot{z}\dot{\theta} - w_2}{z}}
+    $$
+
+    **Remarque :** Cette expression suppose $z \neq 0$, ce qui est physiquement justifié car $z$ est lié à la force normale et ne s'annule pas pendant le vol (sauf peut-être à l'impact).
+
+    **Conclusion :** En choisissant $v$ selon les équations ci-dessus, on obtient exactement $h^{(4)} = u$.
     """)
     return
 
