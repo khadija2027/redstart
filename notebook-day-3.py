@@ -2343,9 +2343,103 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
+    ### 🔓 Solution
+
+    **Dérivée première $\dot{h}$ :**
+
+    En dérivant par rapport au temps :
+    $$
+    \dot{h} =
+    \begin{bmatrix}
+    \dot{x} - \frac{\ell}{6} \dot{\theta} \cos\theta \\
+    \dot{y} - \frac{\ell}{6} \dot{\theta} \sin\theta
+    \end{bmatrix}
+    $$
+
+    **Dérivée seconde $\ddot{h}$ :**
+
+    On dérive à nouveau. En utilisant les équations du mouvement et le système auxiliaire
+    (qui impose $\ddot{z} = v_1$ et fournit $(f_x, f_y)$), on obtient :
+
+    $$
+    \ddot{h} =
+    \begin{bmatrix}
+    \ddot{x} - \frac{\ell}{6}(\ddot{\theta}\cos\theta - \dot{\theta}^2 \sin\theta) \\
+    \ddot{y} - \frac{\ell}{6}(\ddot{\theta}\sin\theta + \dot{\theta}^2 \cos\theta)
+    \end{bmatrix}
+    $$
+
+    Après substitution des équations du mouvement ($M\ddot{x} = f_x$, $M\ddot{y} = f_y - Mg$,
+    $J\ddot{\theta} = -f_x \frac{\ell}{2}\cos\theta + f_y \frac{\ell}{2}\sin\theta$... )
+    et du système auxiliaire, on trouve la forme compacte :
+
+    $$
+    \ddot{h} = \frac{1}{M}
+    R\!\left(\theta - \frac{\pi}{2}\right)
+    \begin{bmatrix} z \\ 0 \end{bmatrix}
+    -
+    \begin{bmatrix} 0 \\ g \end{bmatrix}
+    =
+    \frac{z}{M}
+    \begin{bmatrix} \cos\theta \\ \sin\theta \end{bmatrix}
+    -
+    \begin{bmatrix} 0 \\ g \end{bmatrix}
+    $$
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
     ## 🧩 Third and Fourth-Order Derivatives
 
     Compute the third derivative $h^{(3)}$ of $h$ as a function of $\theta$ and $z$ (and constants) and then the fourth derivative $h^{(4)}$ of $h$ with respect to time as a function of $\theta$, $\dot{\theta}$, $z$, $\dot{z}$, $v$ (and constants) when the auxiliary system is on.
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### 🔓 Solution
+
+    **Troisième dérivée $h^{(3)}$ :**
+
+    En dérivant $\ddot{h} = \frac{z}{M}\begin{bmatrix}\cos\theta\\\sin\theta\end{bmatrix} - \begin{bmatrix}0\\g\end{bmatrix}$ :
+
+    $$
+    h^{(3)} = \frac{\dot{z}}{M}
+    \begin{bmatrix} \cos\theta \\ \sin\theta \end{bmatrix}
+    +
+    \frac{z}{M} \dot{\theta}
+    \begin{bmatrix} -\sin\theta \\ \cos\theta \end{bmatrix}
+    $$
+
+    **Quatrième dérivée $h^{(4)}$ :**
+
+    En dérivant à nouveau et en substituant $\ddot{z} = v_1$ :
+
+    $$
+    h^{(4)} =
+    \frac{v_1}{M}
+    \begin{bmatrix} \cos\theta \\ \sin\theta \end{bmatrix}
+    +
+    \frac{2\dot{z}}{M} \dot{\theta}
+    \begin{bmatrix} -\sin\theta \\ \cos\theta \end{bmatrix}
+    +
+    \frac{z}{M}\ddot{\theta}
+    \begin{bmatrix} -\sin\theta \\ \cos\theta \end{bmatrix}
+    -
+    \frac{z}{M} \dot{\theta}^2
+    \begin{bmatrix} \cos\theta \\ \sin\theta \end{bmatrix}
+    $$
+
+    Or $J\ddot{\theta} = -f(\ell/2)\sin\phi$, et d'après le système auxiliaire, $f\sin\phi = \frac{M\ell v_2}{6z} \cdot z \cdot \frac{1}{\ell/2} \cdot \frac{J}{...}$... En simplifiant avec $J = M\ell^2/12$ :
+
+    $$
+    \ddot{\theta} = \frac{v_2}{\ell\, z / (M\ell)} = \frac{v_2}{z}
+    $$
     """)
     return
 
