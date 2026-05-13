@@ -456,14 +456,16 @@ def _(mo):
 def _(l, np, plt, redstart_solve):
     def free_fall_example():
         t_span = [0.0, 5.0]
-        y0 = [0.0, 0.0, 10.0, 0.0, 0.0, 0.0] # [x, vx, y, vy, theta, omega]
+        y0 = [0.0, 0.0, 10.0, 0.0, 0.0, 0.0]  # [x, vx, y, vy, theta, omega]
+
         def f_phi(t, y):
-            return np.array([0.0, 0.0]) # [f, phi]
+            return np.array([0.0, 0.0])  # [f, phi]
         sol = redstart_solve(t_span, y0, f_phi)
         t = np.linspace(t_span[0], t_span[1], 1000)
         y_t = sol(t)[2]
         plt.plot(t, y_t, label=r"$y(t)$ (height in meters)")
-        plt.plot(t, l * np.ones_like(t), color="grey", ls="--", label=r"$y=\ell$")
+        plt.plot(t, l * np.ones_like(t), color="grey",
+                 ls="--", label=r"$y=\ell$")
         plt.title("Free Fall")
         plt.xlabel("time $t$")
         plt.grid(True)
@@ -545,13 +547,15 @@ def _(l, np, plt, redstart_solve):
     def controlled_landing_example():
         t_span = [0.0, 5.0]
         y0 = [0.0, 0.0, 10.0, -2.0, 0.0, 0.0]
+
         def f_phi_smooth_landing(t, state):
             return np.array([48 / 125 * t + 11 / 25, 0])
         sol = redstart_solve(t_span, y0, f_phi=f_phi_smooth_landing)
         t = np.linspace(t_span[0], t_span[1], 1000)
         y_t = sol(t)[2]
         plt.plot(t, y_t, label=r"$y(t)$ (height in meters)")
-        plt.plot(t, (l / 2) * np.ones_like(t), color="grey", ls="--", label=r"$y=\ell/2$")
+        plt.plot(t, (l / 2) * np.ones_like(t),
+                 color="grey", ls="--", label=r"$y=\ell/2$")
         plt.title("Controlled Landing")
         plt.xlabel("time $t$")
         plt.grid(True)
@@ -647,22 +651,25 @@ def _(mo):
 @app.cell
 def _(svg, transform):
     def world(view_box, *objects):
-        x_min, x_max, y_min, y_max = view_box    
+        x_min, x_max, y_min, y_max = view_box
         width, height = x_max - x_min, y_max - y_min
 
         return svg.svg(
-          xmlns="http://www.w3.org/2000/svg",
-          viewBox=f"0 0 {width} {height}",
-          style="max-height:80vh")(
-              transform.translate(x=-x_min, y=y_max)(
-                  transform.scale(y=-1.0)(
-                      # Sky
-                      svg.rect(x=-1e3, y=0, width=2e3, height=1e3, fill="lightskyblue"),
-                      # Ground
-                      svg.rect(x=-1e3, y=-2e3, width=2e3, height=2e3, fill="sandybrown"),
-                      # Target 
-                      svg.rect(x=-1, y =-1, width=2, height=1, fill="lightgreen"),
-                      *objects,
+            xmlns="http://www.w3.org/2000/svg",
+            viewBox=f"0 0 {width} {height}",
+            style="max-height:80vh")(
+            transform.translate(x=-x_min, y=y_max)(
+                transform.scale(y=-1.0)(
+                    # Sky
+                    svg.rect(x=-1e3, y=0, width=2e3,
+                             height=1e3, fill="lightskyblue"),
+                    # Ground
+                    svg.rect(x=-1e3, y=-2e3, width=2e3,
+                             height=2e3, fill="sandybrown"),
+                    # Target
+                    svg.rect(x=-1, y=-1, width=2,
+                             height=1, fill="lightgreen"),
+                    *objects,
                 )
             )
         )
@@ -681,9 +688,9 @@ def _(mo, svg, world):
             # Display a world with a black square on top of the landing pad
             mo.Html(
                 world(
-                    [-3, 3, -2, 4], 
+                    [-3, 3, -2, 4],
                     svg.rect(x=-1, y=0, width=2, height=2, fill="black"),
-                )    
+                )
             ),
             # Display a world with a red square in the top-left corner of the view box
             # and a blue square on the top-right corner of the view box.
@@ -691,7 +698,7 @@ def _(mo, svg, world):
                 world(
                     [-3, 3, -2, 4],
                     svg.rect(x=-3, y=2, width=2, height=2, fill="red"),
-                    svg.rect(x=1, y=2, width=2, height=2, fill="blue"),                
+                    svg.rect(x=1, y=2, width=2, height=2, fill="blue"),
                 )
             )
         ],
@@ -872,10 +879,10 @@ def _(M, animate_transform, g, l, np, svg):
     def booster_anim(x, y, theta, f, phi, T):
         if not callable(theta):
             theta_cst = theta
-            theta = lambda t: theta_cst
+            def theta(t): return theta_cst
         if not callable(phi):
             phi_cst = phi
-            phi = lambda t: phi_cst
+            def phi(t): return phi_cst
 
         def theta_deg(t):
             return theta(t) / np.pi * 180.0
@@ -915,14 +922,19 @@ def _(M, animate_transform, g, l, np, svg):
 def _(M, booster_anim, g, l, np):
     def booster_anim_0():
         T = 5.0
+
         def x(t):
             return -l/2 + l * (t / T)
+
         def y(t):
             return l/2 + l/2 * (t / T)
+
         def theta(t):
             return (t / T) * 2 * np.pi
+
         def f(t):
             return M * g * (t / T)
+
         def phi(t):
             return 2 * np.pi * (t / T)
         return booster_anim(x, y, theta, f, phi, T=T)
@@ -934,7 +946,7 @@ def _(M, booster_anim, g, l, np):
 def _(booster_anim_0, mo, world):
     mo.Html(
         world([-3, 3, -2, 4], booster_anim_0())
-    ).center() 
+    ).center()
     return
 
 
@@ -968,18 +980,19 @@ def _(mo):
 def _(booster_anim, mo, np, redstart_solve, world):
     def anim_1():
         t_span = [0.0, 5.0]
-        y0 = [0.0, 0.0, 10.0, 0.0, 0.0, 0.0] 
+        y0 = [0.0, 0.0, 10.0, 0.0, 0.0, 0.0]
+
         def f_phi(t, state):
             return np.array([0, 0])
         sol = redstart_solve(t_span, y0, f_phi)
-        x = lambda t: sol(t)[0]
-        y = lambda t: sol(t)[2]
-        theta = lambda t : sol(t)[4]
-        f = lambda t: f_phi(t, sol(t))[0]
-        phi = lambda t: f_phi(t, sol(t))[0]
+        def x(t): return sol(t)[0]
+        def y(t): return sol(t)[2]
+        def theta(t): return sol(t)[4]
+        def f(t): return f_phi(t, sol(t))[0]
+        def phi(t): return f_phi(t, sol(t))[0]
         return mo.Html(
             world(
-                [-3, 3, -2, 12], 
+                [-3, 3, -2, 12],
                 booster_anim(x, y, theta, f, phi, T=t_span[1])
             )
         ).center()
@@ -993,17 +1006,18 @@ def _(M, booster_anim, g, mo, np, redstart_solve, world):
     def anim_2():
         t_span = [0.0, 5.0]
         y0 = [0.0, 0.0, 10.0, 0.0, 0.0, 0.0]
+
         def f_phi(t, state):
             return np.array([M * g, 0])
         sol = redstart_solve(t_span, y0, f_phi)
-        x = lambda t: sol(t)[0]
-        y = lambda t: sol(t)[2]
-        theta = lambda t : sol(t)[4]
-        f = lambda t: f_phi(t, sol(t))[0]
-        phi = lambda t: f_phi(t, sol(t))[1]
+        def x(t): return sol(t)[0]
+        def y(t): return sol(t)[2]
+        def theta(t): return sol(t)[4]
+        def f(t): return f_phi(t, sol(t))[0]
+        def phi(t): return f_phi(t, sol(t))[1]
         return mo.Html(
             world(
-                [-3, 3, -2, 12], 
+                [-3, 3, -2, 12],
                 booster_anim(x, y, theta, f, phi, T=t_span[1])
             )
         ).center()
@@ -1017,17 +1031,18 @@ def _(M, booster_anim, g, mo, np, redstart_solve, world):
     def anim_3():
         t_span = [0.0, 5.0]
         y0 = [0.0, 0.0, 10.0, 0.0, 0.0, 0.0]
+
         def f_phi(t, state):
             return np.array([M * g, np.pi / 8])
         sol = redstart_solve(t_span, y0, f_phi)
-        x = lambda t: sol(t)[0]
-        y = lambda t: sol(t)[2]
-        theta = lambda t : sol(t)[4]
-        f = lambda t: f_phi(t, sol(t))[0]
-        phi = lambda t: f_phi(t, sol(t))[1]
+        def x(t): return sol(t)[0]
+        def y(t): return sol(t)[2]
+        def theta(t): return sol(t)[4]
+        def f(t): return f_phi(t, sol(t))[0]
+        def phi(t): return f_phi(t, sol(t))[1]
         return mo.Html(
             world(
-                [-3, 3, -2, 12], 
+                [-3, 3, -2, 12],
                 booster_anim(x, y, theta, f, phi, T=t_span[1])
             )
         ).center()
@@ -1041,17 +1056,18 @@ def _(booster_anim, mo, np, redstart_solve, world):
     def anim_4():
         t_span = [0.0, 5.0]
         y0 = [0.0, 0.0, 10.0, -2.0, 0.0, 0.0]
+
         def f_phi(t, state):
             return np.array([48 / 125 * t + 11 / 25, 0])
         sol = redstart_solve(t_span, y0, f_phi)
-        x = lambda t: sol(t)[0]
-        y = lambda t: sol(t)[2]
-        theta = lambda t : sol(t)[4]
-        f = lambda t: f_phi(t, sol(t))[0]
-        phi = lambda t: f_phi(t, sol(t))[1]
+        def x(t): return sol(t)[0]
+        def y(t): return sol(t)[2]
+        def theta(t): return sol(t)[4]
+        def f(t): return f_phi(t, sol(t))[0]
+        def phi(t): return f_phi(t, sol(t))[1]
         return mo.Html(
             world(
-                [-3, 3, -2, 12], 
+                [-3, 3, -2, 12],
                 booster_anim(x, y, theta, f, phi, T=t_span[1])
             )
         ).center()
@@ -1262,8 +1278,8 @@ def _(g, np):
 @app.cell(hide_code=True)
 def _(M, g, l, np):
     B = np.zeros((6, 2))
-    B[ 1, 1]  = -g 
-    B[ 3, 0]  = 1/M
+    B[1, 1] = -g
+    B[3, 0] = 1/M
     B[-1, 1] = -6 * g / l
     B
     return (B,)
@@ -1373,9 +1389,9 @@ def _(mo):
 @app.cell
 def _(g, l, np):
     A_lat = np.array([
-        [0, 1, 0, 0], 
-        [0, 0, -g, 0], 
-        [0, 0, 0, 1], 
+        [0, 1, 0, 0],
+        [0, 0, -g, 0],
+        [0, 0, 0, 1],
         [0, 0, 0, 0]], dtype=np.float64)
     B_lat = np.array([[0, -g, 0, - 6 * g / l]]).T
 
@@ -1470,7 +1486,6 @@ def _(make_fun_lat, mo, np, plt, sci):
         ax2.set_xlabel(r"time $t$")
         ax2.legend()
         return mo.center(fig)
-
 
     lin_sim_1()
     return
@@ -1588,7 +1603,8 @@ def _(A_lat, B_lat, make_fun_lat, mo, np, plt, sci):
             return -K.dot(state)
 
         f_lat = make_fun_lat(phi)
-        r = sci.solve_ivp(fun=f_lat, y0=state_0, t_span=t_span, dense_output=True)
+        r = sci.solve_ivp(fun=f_lat, y0=state_0,
+                          t_span=t_span, dense_output=True)
         sol_lin_t = r.sol(t)
 
         fig, (ax1, ax2, ax3) = plt.subplots(3, 1, sharex=True, figsize=(12, 6))
@@ -1607,7 +1623,6 @@ def _(A_lat, B_lat, make_fun_lat, mo, np, plt, sci):
         ax3.set_xlabel(r"time $t$")
         ax3.legend(loc="lower right")
         return mo.center(fig)
-
 
     lin_sim_k1()
     return
@@ -1657,7 +1672,8 @@ def _(A_lat, B_lat, make_fun_lat, mo, np, plt, sci):
             return -K.dot(state)
 
         f_lat = make_fun_lat(phi)
-        r = sci.solve_ivp(fun=f_lat, y0=state_0, t_span=t_span, dense_output=True)
+        r = sci.solve_ivp(fun=f_lat, y0=state_0,
+                          t_span=t_span, dense_output=True)
         sol_lin_t = r.sol(t)
 
         fig, (ax1, ax2, ax3) = plt.subplots(3, 1, sharex=True, figsize=(12, 6))
@@ -1676,7 +1692,6 @@ def _(A_lat, B_lat, make_fun_lat, mo, np, plt, sci):
         ax3.set_xlabel(r"time $t$")
         ax3.legend(loc="lower right")
         return mo.center(fig)
-
 
     lin_sim_k2()
     return
@@ -1703,7 +1718,8 @@ def _(A_lat, B_lat, make_fun_lat, mo, np, plt, sci):
             return -K.dot(state)
 
         f_lat = make_fun_lat(phi)
-        r = sci.solve_ivp(fun=f_lat, y0=state_0, t_span=t_span, dense_output=True)
+        r = sci.solve_ivp(fun=f_lat, y0=state_0,
+                          t_span=t_span, dense_output=True)
         sol_lin_t = r.sol(t)
 
         fig, (ax1, ax2, ax3) = plt.subplots(3, 1, sharex=True, figsize=(12, 6))
@@ -1722,7 +1738,6 @@ def _(A_lat, B_lat, make_fun_lat, mo, np, plt, sci):
         ax3.set_xlabel(r"time $t$")
         ax3.legend(loc="lower right")
         return mo.center(fig)
-
 
     lin_sim_k3()
     return
@@ -1815,7 +1830,8 @@ def _(A_lat, B_lat, make_fun_lat, mo, np, plt, sci, scipy):
             return -K.dot(state)
 
         f_lat = make_fun_lat(phi)
-        r = sci.solve_ivp(fun=f_lat, y0=state_0, t_span=t_span, dense_output=True)
+        r = sci.solve_ivp(fun=f_lat, y0=state_0,
+                          t_span=t_span, dense_output=True)
         sol_lin_t = r.sol(t)
 
         fig, (ax1, ax2, ax3) = plt.subplots(3, 1, sharex=True, figsize=(12, 6))
@@ -1835,7 +1851,6 @@ def _(A_lat, B_lat, make_fun_lat, mo, np, plt, sci, scipy):
         ax3.legend(loc="lower right")
         return mo.center(fig)
 
-
     lin_sim_3()
     return
 
@@ -1847,7 +1862,6 @@ def _(A_lat, B_lat, make_fun_lat, mo, np, plt, sci, scipy):
         B=B_lat,
         poles=-0.5 * np.array([1.0, 1.01, 1.02, 1.03]),
     ).gain_matrix.squeeze()
-
 
     def lin_sim_32():
         K = Kpp
@@ -1868,7 +1882,8 @@ def _(A_lat, B_lat, make_fun_lat, mo, np, plt, sci, scipy):
             return -K.dot(state)
 
         f_lat = make_fun_lat(phi)
-        r = sci.solve_ivp(fun=f_lat, y0=state_0, t_span=t_span, dense_output=True)
+        r = sci.solve_ivp(fun=f_lat, y0=state_0,
+                          t_span=t_span, dense_output=True)
         sol_lin_t = r.sol(t)
 
         fig, (ax1, ax2, ax3) = plt.subplots(3, 1, sharex=True, figsize=(12, 6))
@@ -1887,7 +1902,6 @@ def _(A_lat, B_lat, make_fun_lat, mo, np, plt, sci, scipy):
         ax3.set_xlabel(r"time $t$")
         ax3.legend(loc="lower right")
         return mo.center(fig)
-
 
     lin_sim_32()
     return (Kpp,)
@@ -1919,7 +1933,8 @@ def _(A_lat, B_lat, make_fun_lat, mo, np, plt, sci, scipy):
             return -K.dot(state)
 
         f_lat = make_fun_lat(phi)
-        r = sci.solve_ivp(fun=f_lat, y0=state_0, t_span=t_span, dense_output=True)
+        r = sci.solve_ivp(fun=f_lat, y0=state_0,
+                          t_span=t_span, dense_output=True)
         sol_lin_t = r.sol(t)
 
         fig, (ax1, ax2, ax3) = plt.subplots(3, 1, sharex=True, figsize=(12, 6))
@@ -1938,7 +1953,6 @@ def _(A_lat, B_lat, make_fun_lat, mo, np, plt, sci, scipy):
         ax3.set_xlabel(r"time $t$")
         ax3.legend(loc="lower right")
         return mo.center(fig)
-
 
     lin_sim_33()
     return
@@ -1993,14 +2007,14 @@ def _(mo):
 @app.cell
 def _(A_lat, B_lat, make_fun_lat, mo, np, plt, sci, scipy):
     def lin_sim_4():
-        Q = np.eye(4,4)
+        Q = np.eye(4, 4)
         print("Q:", Q)
-        R = np.eye(1) #10*l**2 * np.eye(1)
+        R = np.eye(1)  # 10*l**2 * np.eye(1)
         print("R:", R)
         Pi = scipy.linalg.solve_continuous_are(
-            a=A_lat, 
-            b=B_lat, 
-            q=Q, 
+            a=A_lat,
+            b=B_lat,
+            q=Q,
             r=R
         )
         Koc = (np.linalg.inv(R) @ B_lat.T @ Pi).squeeze()
@@ -2023,7 +2037,8 @@ def _(A_lat, B_lat, make_fun_lat, mo, np, plt, sci, scipy):
             return -K.dot(state)
 
         f_lat = make_fun_lat(phi)
-        r = sci.solve_ivp(fun=f_lat, y0=state_0, t_span=t_span, dense_output=True)
+        r = sci.solve_ivp(fun=f_lat, y0=state_0,
+                          t_span=t_span, dense_output=True)
         sol_lin_t = r.sol(t)
 
         fig, (ax1, ax2, ax3) = plt.subplots(3, 1, sharex=True, figsize=(12, 6))
@@ -2043,7 +2058,6 @@ def _(A_lat, B_lat, make_fun_lat, mo, np, plt, sci, scipy):
         ax3.legend(loc="lower right")
         return mo.center(fig)
 
-
     lin_sim_4()
     return
 
@@ -2058,14 +2072,14 @@ def _(mo):
 
 @app.cell
 def _(A_lat, B_lat, make_fun_lat, mo, np, plt, sci, scipy):
-    Q = np.eye(4,4)
+    Q = np.eye(4, 4)
     print("Q:", Q)
     R = 100 * np.eye(1)
     print("R:", R)
     Pi = scipy.linalg.solve_continuous_are(
-        a=A_lat, 
-        b=B_lat, 
-        q=Q, 
+        a=A_lat,
+        b=B_lat,
+        q=Q,
         r=R
     )
     Koc = (np.linalg.inv(R) @ B_lat.T @ Pi).squeeze()
@@ -2089,7 +2103,8 @@ def _(A_lat, B_lat, make_fun_lat, mo, np, plt, sci, scipy):
             return -K.dot(state)
 
         f_lat = make_fun_lat(phi)
-        r = sci.solve_ivp(fun=f_lat, y0=state_0, t_span=t_span, dense_output=True)
+        r = sci.solve_ivp(fun=f_lat, y0=state_0,
+                          t_span=t_span, dense_output=True)
         sol_lin_t = r.sol(t)
 
         fig, (ax1, ax2, ax3) = plt.subplots(3, 1, sharex=True, figsize=(12, 6))
@@ -2108,7 +2123,6 @@ def _(A_lat, B_lat, make_fun_lat, mo, np, plt, sci, scipy):
         ax3.set_xlabel(r"time $t$")
         ax3.legend(loc="lower right")
         return mo.center(fig)
-
 
     lin_sim_42()
     return (Koc,)
@@ -2137,20 +2151,21 @@ def _(Kpp, M, booster_anim, g, mo, np, redstart_solve, world):
     def _anim():
         t_span = [0.0, 20.0]
         y0 = [0.0, 0.0, 20.0, 0.0, 45 * np.pi/180.0, 0.0]
+
         def f_phi(t, state):
-            x, dx, y, dy, theta, dtheta = state  
+            x, dx, y, dy, theta, dtheta = state
             return np.array(
                 [M*g, -Kpp.dot([x, dx, theta, dtheta])]
             )
         sol = redstart_solve(t_span, y0, f_phi)
-        x = lambda t: sol(t)[0]
-        y = lambda t: sol(t)[2]
-        theta = lambda t : sol(t)[4]
-        f = lambda t: f_phi(t, sol(t))[0]
-        phi = lambda t: f_phi(t, sol(t))[1]
+        def x(t): return sol(t)[0]
+        def y(t): return sol(t)[2]
+        def theta(t): return sol(t)[4]
+        def f(t): return f_phi(t, sol(t))[0]
+        def phi(t): return f_phi(t, sol(t))[1]
         return mo.Html(
             world(
-                [-6, 6, -2, 22], 
+                [-6, 6, -2, 22],
                 booster_anim(x, y, theta, f, phi, T=t_span[1])
             )
         ).center()
@@ -2164,20 +2179,21 @@ def _(Koc, M, booster_anim, g, mo, np, redstart_solve, world):
     def _anim():
         t_span = [0.0, 20.0]
         y0 = [0.0, 0.0, 20.0, 0.0, 45 * np.pi/180.0, 0.0]
+
         def f_phi(t, state):
-            x, dx, y, dy, theta, dtheta = state  
+            x, dx, y, dy, theta, dtheta = state
             return np.array(
                 [M*g, -Koc.dot([x, dx, theta, dtheta])]
             )
         sol = redstart_solve(t_span, y0, f_phi)
-        x = lambda t: sol(t)[0]
-        y = lambda t: sol(t)[2]
-        theta = lambda t : sol(t)[4]
-        f = lambda t: f_phi(t, sol(t))[0]
-        phi = lambda t: f_phi(t, sol(t))[1]
+        def x(t): return sol(t)[0]
+        def y(t): return sol(t)[2]
+        def theta(t): return sol(t)[4]
+        def f(t): return f_phi(t, sol(t))[0]
+        def phi(t): return f_phi(t, sol(t))[1]
         return mo.Html(
             world(
-                [-6, 6, -2, 22], 
+                [-6, 6, -2, 22],
                 booster_anim(x, y, theta, f, phi, T=t_span[1])
             )
         ).center()
@@ -2306,7 +2322,7 @@ def _(M, booster, g, l, mo, np, svg, transform, world):
         # h label
         transform.translate(_hx + 0.12, _hy)(
             transform.scale(1, -1)(
-                svg.text(fill="red", style="font-size:0.18px")("h  (upper third point)")
+                svg.text(fill="red", style="font-size:0.18px")("h")
             )
         ),
     )
@@ -2343,6 +2359,34 @@ def _(mo):
 
     $$
     h^{(4)} = u
+    $$
+    """)
+    return
+
+
+@app.cell
+def _():
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(r"""
+    Differentiating 4 times, we found:
+    $$
+    h^{(4)} = \ddot{v}.
+    $$
+
+    Introducing an auxiliary system with input
+    $u = (u_1, u_2)$ and dynamics:
+    $$
+    \ddot{v} = u,
+    $$
+    i.e. $v_1$ and $v_2$ are each governed by a double integrator driven by $u_1$ and $u_2$.
+
+    Feeding the output $v$ of this second auxiliary system into the first one :
+    $$
+    \boxed{h^{(4)} = u.}
     $$
     """)
     return
