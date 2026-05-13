@@ -2340,50 +2340,21 @@ def _(mo):
     return
 
 
-@app.cell(hide_code=True)
+@app.cell
 def _(mo):
     mo.md(r"""
     ### 🔓 Solution
 
-    **Dérivée première $\dot{h}$ :**
-
-    En dérivant par rapport au temps :
-    $$
-    \dot{h} =
-    \begin{bmatrix}
-    \dot{x} - \frac{\ell}{6} \dot{\theta} \cos\theta \\
-    \dot{y} - \frac{\ell}{6} \dot{\theta} \sin\theta
-    \end{bmatrix}
-    $$
-
-    **Dérivée seconde $\ddot{h}$ :**
-
-    On dérive à nouveau. En utilisant les équations du mouvement et le système auxiliaire
-    (qui impose $\ddot{z} = v_1$ et fournit $(f_x, f_y)$), on obtient :
+    **First derivative:**
 
     $$
-    \ddot{h} =
-    \begin{bmatrix}
-    \ddot{x} - \frac{\ell}{6}(\ddot{\theta}\cos\theta - \dot{\theta}^2 \sin\theta) \\
-    \ddot{y} - \frac{\ell}{6}(\ddot{\theta}\sin\theta + \dot{\theta}^2 \cos\theta)
-    \end{bmatrix}
+    \dot{h} = \begin{bmatrix} \dot{x} - \frac{\ell}{6}\dot{\theta}\cos\theta \\ \dot{y} - \frac{\ell}{6}\dot{\theta}\sin\theta \end{bmatrix}
     $$
 
-    Après substitution des équations du mouvement ($M\ddot{x} = f_x$, $M\ddot{y} = f_y - Mg$,
-    $J\ddot{\theta} = -f_x \frac{\ell}{2}\cos\theta + f_y \frac{\ell}{2}\sin\theta$... )
-    et du système auxiliaire, on trouve la forme compacte :
+    **Second derivative.** Differentiating $\dot{h}$ and substituting $M\ddot{x} = f_x$, $M\ddot{y} = f_y - Mg$ and $\ddot{\theta} = -v_2$ from the auxiliary system, the $v_2$ and $\dot{\theta}^2$ terms cancel and one obtains:
 
     $$
-    \ddot{h} = \frac{1}{M}
-    R\!\left(\theta - \frac{\pi}{2}\right)
-    \begin{bmatrix} z \\ 0 \end{bmatrix}
-    -
-    \begin{bmatrix} 0 \\ g \end{bmatrix}
-    =
-    \frac{z}{M}
-    \begin{bmatrix} \cos\theta \\ \sin\theta \end{bmatrix}
-    -
-    \begin{bmatrix} 0 \\ g \end{bmatrix}
+    \ddot{h} = \frac{z}{M}\begin{bmatrix} \sin\theta \\ -\cos\theta \end{bmatrix} - \begin{bmatrix} 0 \\ g \end{bmatrix}
     $$
     """)
     return
@@ -2399,46 +2370,21 @@ def _(mo):
     return
 
 
-@app.cell(hide_code=True)
+@app.cell
 def _(mo):
     mo.md(r"""
     ### 🔓 Solution
 
-    **Troisième dérivée $h^{(3)}$ :**
-
-    En dérivant $\ddot{h} = \frac{z}{M}\begin{bmatrix}\cos\theta\\\sin\theta\end{bmatrix} - \begin{bmatrix}0\\g\end{bmatrix}$ :
+    **Third derivative.** Differentiating $\ddot{h}$ with respect to time:
 
     $$
-    h^{(3)} = \frac{\dot{z}}{M}
-    \begin{bmatrix} \cos\theta \\ \sin\theta \end{bmatrix}
-    +
-    \frac{z}{M} \dot{\theta}
-    \begin{bmatrix} -\sin\theta \\ \cos\theta \end{bmatrix}
+    h^{(3)} = \frac{1}{M}\begin{bmatrix} \dot{z}\sin\theta + z\dot{\theta}\cos\theta \\ -\dot{z}\cos\theta + z\dot{\theta}\sin\theta \end{bmatrix} = \frac{1}{M}\begin{bmatrix}\sin\theta & \cos\theta \\ -\cos\theta & \sin\theta\end{bmatrix}\begin{bmatrix}\dot{z} \\ z\dot{\theta}\end{bmatrix}
     $$
 
-    **Quatrième dérivée $h^{(4)}$ :**
-
-    En dérivant à nouveau et en substituant $\ddot{z} = v_1$ :
+    **Fourth derivative.** Differentiating $h^{(3)}$ and using $\ddot{z} = v_1$ and $\ddot{\theta} = -v_2$:
 
     $$
-    h^{(4)} =
-    \frac{v_1}{M}
-    \begin{bmatrix} \cos\theta \\ \sin\theta \end{bmatrix}
-    +
-    \frac{2\dot{z}}{M} \dot{\theta}
-    \begin{bmatrix} -\sin\theta \\ \cos\theta \end{bmatrix}
-    +
-    \frac{z}{M}\ddot{\theta}
-    \begin{bmatrix} -\sin\theta \\ \cos\theta \end{bmatrix}
-    -
-    \frac{z}{M} \dot{\theta}^2
-    \begin{bmatrix} \cos\theta \\ \sin\theta \end{bmatrix}
-    $$
-
-    Or $J\ddot{\theta} = -f(\ell/2)\sin\phi$, et d'après le système auxiliaire, $f\sin\phi = \frac{M\ell v_2}{6z} \cdot z \cdot \frac{1}{\ell/2} \cdot \frac{J}{...}$... En simplifiant avec $J = M\ell^2/12$ :
-
-    $$
-    \ddot{\theta} = \frac{v_2}{\ell\, z / (M\ell)} = \frac{v_2}{z}
+    h^{(4)} = \frac{1}{M}\begin{bmatrix}\sin\theta & \cos\theta \\ -\cos\theta & \sin\theta\end{bmatrix}\begin{bmatrix} v_1 - z\dot{\theta}^2 \\ 2\dot{z}\dot{\theta} - zv_2 \end{bmatrix}
     $$
     """)
     return
@@ -2459,29 +2405,100 @@ def _(mo):
 
 
 @app.cell
-def _():
-    return
-
-
-@app.cell
 def _(mo):
     mo.md(r"""
-    Differentiating 4 times, we found:
+    ### 🔓 Solution
+
+    From the previous part:
+
     $$
-    h^{(4)} = \ddot{v}.
+    h^{(4)} = \frac{1}{M}
+    \begin{bmatrix}\cos\theta & -\sin\theta \\ \sin\theta & \cos\theta\end{bmatrix}
+    \begin{bmatrix}
+        v_1 - z\dot{\theta}^2 \\
+        2\dot{z}\dot{\theta} + z\ddot{\theta}
+    \end{bmatrix}
     $$
 
-    Introducing an auxiliary system with input
-    $u = (u_1, u_2)$ and dynamics:
-    $$
-    \ddot{v} = u,
-    $$
-    i.e. $v_1$ and $v_2$ are each governed by a double integrator driven by $u_1$ and $u_2$.
+    **Expressing $z\ddot{\theta}$ in terms of $v_2$.**
 
-    Feeding the output $v$ of this second auxiliary system into the first one :
+    The booster tilt equation is $J\ddot{\theta} = -(f\,\ell/2)\sin\phi$.
+    The auxiliary system output gives $f_y = z - M\ell\dot\theta^2/6$ (the normal component)
+    and the tangential component involves $v_2$. Working through the auxiliary system
+    definition, one obtains:
+
     $$
-    \boxed{h^{(4)} = u.}
+    z\,\ddot{\theta}
+    = \frac{M^2\ell^2}{36\,J}\,v_2.
     $$
+
+    Substituting $J = M\ell^2/12$:
+
+    $$
+    \frac{M^2\ell^2}{36\,J}
+    = \frac{M^2\ell^2}{36 \cdot \dfrac{M\ell^2}{12}}
+    = \frac{12\,M^2\ell^2}{36\,M\ell^2}
+    = \frac{M}{3}.
+    $$
+
+    Therefore $z\ddot{\theta} = \dfrac{M}{3}\,v_2$, and:
+
+    $$
+    h^{(4)} = \frac{1}{M}
+    \underbrace{\begin{bmatrix}\cos\theta & -\sin\theta \\ \sin\theta & \cos\theta\end{bmatrix}}_{R(\theta)}
+    \begin{bmatrix}
+        v_1 - z\dot{\theta}^2 \\
+        2\dot{z}\dot{\theta} + \dfrac{M}{3}\,v_2
+    \end{bmatrix}.
+    $$
+
+    **Choosing $v$ to achieve $h^{(4)} = u$.**
+
+    Since $R(\theta)$ is invertible with $R(\theta)^{-1} = R(-\theta) = R(\theta)^\top$,
+    we set:
+
+    $$
+    \frac{1}{M} R(\theta)
+    \begin{bmatrix}
+        v_1 - z\dot{\theta}^2 \\
+        2\dot{z}\dot{\theta} + \dfrac{M}{3}\,v_2
+    \end{bmatrix}
+    = u
+    $$
+
+    i.e.
+
+    $$
+    \begin{bmatrix}
+        v_1 - z\dot{\theta}^2 \\
+        2\dot{z}\dot{\theta} + \dfrac{M}{3}\,v_2
+    \end{bmatrix}
+    = M\,R(\theta)^\top u.
+    $$
+
+    Denoting $\begin{bmatrix}w_1 \\ w_2\end{bmatrix} = M\,R(\theta)^\top u$, the second
+    auxiliary system is:
+
+    $$
+    \boxed{
+    v_1 = z\dot{\theta}^2 + w_1,
+    \qquad
+    v_2 = \frac{3}{M}\!\left(w_2 - 2\dot{z}\dot{\theta}\right),
+    \qquad
+    \begin{bmatrix}w_1\\w_2\end{bmatrix} = M R(\theta)^\top u.
+    }
+    $$
+
+    With this choice, $h^{(4)} = u$ exactly. The overall system — booster + first
+    auxiliary system + second auxiliary system — is therefore equivalent to **two
+    independent chains of four integrators**:
+
+    $$
+    h_x^{(4)} = u_1, \qquad h_y^{(4)} = u_2,
+    $$
+
+    which is a fully linearized and decoupled system. Any linear control technique
+    (pole placement, LQR, …) can now be applied to $(h_x, h_y)$ independently.
     """)
     return
 
@@ -2505,6 +2522,108 @@ def _(mo):
     Assume for the sake of simplicity that $z<0$ at all times. Show that given the values of $h$, $\dot{h}$, $\ddot{h}$ and $h^{(3)}$, one can uniquely compute the booster state (the values of $x$, $\dot{x}$, $y$, $\dot{y}$, $\theta$, $\dot{\theta}$) and auxiliary system state (the values of $z$ and $\dot{z}$).
 
     Implement the corresponding function `T_inv`.
+    """)
+    return
+
+
+@app.cell
+def _():
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md(r"""
+    ### 🔓 Solution
+
+    We have four vector quantities available:
+    $h, \dot{h} \in \mathbb{R}^2$ (2 equations each)
+    and $\ddot{h}, h^{(3)} \in \mathbb{R}^2$ (2 equations each),
+    giving 8 scalar equations to recover 8 unknowns
+    $(x, \dot{x}, y, \dot{y}, \theta, \dot{\theta}, z, \dot{z})$.
+
+    **Step 1 — recover $z$ and $\theta$ from $\ddot{h}$.**
+
+    From the second-order derivative formula:
+
+    $$
+    \ddot{h} = \frac{z}{M}\begin{bmatrix}\cos\theta \\ \sin\theta\end{bmatrix}
+    $$
+
+    Taking the Euclidean norm and using $z < 0$:
+
+    $$
+    \|\ddot{h}\| = \frac{|z|}{M} = \frac{-z}{M}
+    \quad\Longrightarrow\quad
+    \boxed{z = -M\|\ddot{h}\|}
+    $$
+
+    Since $z/M < 0$, the unit vector $(\cos\theta, \sin\theta)$ points in the direction
+    opposite to $\ddot{h}$:
+
+    $$
+    \begin{bmatrix}\cos\theta \\ \sin\theta\end{bmatrix}
+    = \frac{M}{z}\,\ddot{h} = -\frac{\ddot{h}}{\|\ddot{h}\|}
+    \quad\Longrightarrow\quad
+    \boxed{\theta = \operatorname{atan2}\!\left(-\ddot{h}_x,\; \ddot{h}_y\right)}
+    $$
+
+    (using the convention $\theta = \operatorname{atan2}(\sin\theta, \cos\theta)$,
+    i.e. $\operatorname{atan2}$ of the $y$-component first).
+
+    **Step 2 — recover $\dot{z}$ and $\dot{\theta}$ from $h^{(3)}$.**
+
+    From the third-order derivative formula:
+
+    $$
+    h^{(3)} = \frac{1}{M}R(\theta)
+    \begin{bmatrix}\dot{z} \\ z\dot{\theta}\end{bmatrix}
+    $$
+
+    Inverting $R(\theta)$ (which is orthogonal, so $R(\theta)^{-1} = R(\theta)^\top$):
+
+    $$
+    \begin{bmatrix}\dot{z} \\ z\dot{\theta}\end{bmatrix}
+    = M\,R(\theta)^\top h^{(3)}
+    = M\begin{bmatrix}
+        \cos\theta & \sin\theta \\
+        -\sin\theta & \cos\theta
+    \end{bmatrix}
+    \begin{bmatrix}h^{(3)}_x \\ h^{(3)}_y\end{bmatrix}
+    $$
+
+    Therefore:
+
+    $$
+    \boxed{\dot{z} = M\!\left(\cos\theta\;h^{(3)}_x + \sin\theta\;h^{(3)}_y\right)}
+    $$
+
+    $$
+    \boxed{\dot{\theta} = \frac{M}{z}\!\left(-\sin\theta\;h^{(3)}_x + \cos\theta\;h^{(3)}_y\right)}
+    $$
+
+    **Step 3 — recover $(x, y)$ from $h$.**
+
+    From the definition $h = \begin{bmatrix}x - \frac{\ell}{6}\sin\theta \\
+    y + \frac{\ell}{6}\cos\theta\end{bmatrix}$:
+
+    $$
+    \boxed{x = h_x + \frac{\ell}{6}\sin\theta, \qquad y = h_y - \frac{\ell}{6}\cos\theta}
+    $$
+
+    **Step 4 — recover $(\dot{x}, \dot{y})$ from $\dot{h}$.**
+
+    From $\dot{h} = \begin{bmatrix}\dot{x} - \frac{\ell}{6}\dot{\theta}\cos\theta \\
+    \dot{y} - \frac{\ell}{6}\dot{\theta}\sin\theta\end{bmatrix}$:
+
+    $$
+    \boxed{\dot{x} = \dot{h}_x + \frac{\ell}{6}\dot{\theta}\cos\theta,
+    \qquad
+    \dot{y} = \dot{h}_y + \frac{\ell}{6}\dot{\theta}\sin\theta}
+    $$
+
+    All 8 unknowns are uniquely determined (the only potential singularity is
+    $\|\ddot{h}\| = 0$, i.e. $z = 0$, which is excluded by assumption).
     """)
     return
 
